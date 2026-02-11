@@ -13,15 +13,16 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('pending');
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('order_number')->unique()->nullable(); // e.g., ORD-ABC123
+            $table->string('status')->default('pending'); // pending, processing, completed, cancelled
             $table->decimal('subtotal', 10, 2);
-            $table->decimal('shipping_fee', 10, 2)->nullable();
+            $table->decimal('discount', 10, 2)->default(0);
+            $table->decimal('shipping_fee', 10, 2)->default(0);
             $table->decimal('total', 10, 2);
-            $table->string('payment_method')->nullable();
-            $table->string('payment_ref')->nullable();
-            $table->json('shipping_address')->nullable();
-
+            $table->string('payment_method'); // aba_pay, cash_on_delivery, etc.
+            $table->string('payment_ref')->nullable(); // for future online payment reference
+            $table->json('shipping_address'); // stores name, phone, street, city, province, zip
             $table->timestamps();
         });
     }

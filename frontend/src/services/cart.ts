@@ -1,249 +1,130 @@
-import { mockProducts } from './mockData'
+// src/services/cart.ts
+import api from './api';  // ← Use the shared axios instance
 
 export interface CartItem {
-  id: number
-  product_id: number
-  quantity: number
+  id: number;
+  product_id: number;
+  quantity: number;
   product?: {
-    id: number
-    name: string
-    price: number
-    discount_price?: number
-    images?: string[]
-  }
+    id: number;
+    name: string;
+    price: number;
+    discount_price?: number | null;
+    images?: string[];
+    primary_image?: string | null;
+    stock?: number | null;
+    slug?: string | null;
+  };
 }
 
-export interface Cart {
-  id: number
-  user_id: number
-  items: CartItem[]
-  total: number
-  total_items: number
+export interface CartResponse {
+  id: number;
+  user_id: number;
+  items: CartItem[];
+  total: number;
+  total_items: number;
 }
 
-const CART_STORAGE_KEY = 'cart_items'
+// Helper – converts relative storage paths → full URLs
+function normalizeImagePath(path?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('//')) return path;
 
-// Simulate network delay
-function delay(ms: number = 200): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  // Use the same base as api (remove /api suffix if present)
+  const base = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://127.0.0.1:8000';
+  return `${base}/storage/${cleanPath}`;
 }
 
-// Helper to get cart from localStorage
-function getCartFromStorage(): CartItem[] {
-  try {
-    const stored = localStorage.getItem(CART_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : []
-  } catch {
-    return []
-  }
-}
+function normalizeCartImages(cart: CartResponse): CartResponse {
+  cart.items = cart.items.map((item) => {
+    if (item.product) {
+      item.product.images = (item.product.images || [])
+        .map(normalizeImagePath)
+        .filter((p): p is string => !!p);
 
-// Helper to save cart to localStorage
-function saveCartToStorage(items: CartItem[]): void {
-  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
-}
-
-// Helper to calculate total
-function calculateTotal(items: CartItem[]): { total: number; total_items: number } {
-  let total = 0
-  let total_items = 0
-
-  items.forEach(item => {
-    const product = mockProducts.find(p => p.id === item.product_id)
-    if (product) {
-      const price = product.discount_price || product.price
-      total += price * item.quantity
-      total_items += item.quantity
+      item.product.primary_image = normalizeImagePath(item.product.primary_image);
     }
-  })
-
-  return { total, total_items }
-}
-
-// Helper to enrich cart items with product data
-function enrichCartItems(items: CartItem[]): CartItem[] {
-  return items.map(item => {
-    const product = mockProducts.find(p => p.id === item.product_id)
-    return {
-      ...item,
-      product: product ? {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        discount_price: product.discount_price,
-        images: product.images
-      } : undefined
-    }
-  })
+    return item;
+  });
+  return cart;
 }
 
 export const cartService = {
-  // Get cart
-  async getCart(): Promise<Cart> {
-    await delay(150)
-    
-    const userId = parseInt(localStorage.getItem('userId') || '0')
-    const items = getCartFromStorage()
-    const enrichedItems = enrichCartItems(items)
-    const { total, total_items } = calculateTotal(enrichedItems)
-
-    return {
-      id: 1,
-      user_id: userId,
-      items: enrichedItems,
-      total,
-      total_items
+  async getCart(): Promise<CartResponse> {
+    try {
+      const response = await api.get('/cart');
+      return normalizeCartImages(response.data);
+    } catch (error: any) {
+      console.error('Failed to fetch cart:', error);
+      throw new Error(error.response?.data?.message || 'Could not load cart');
     }
   },
 
-  // Add item to cart
-  async addItem(productId: number, quantity: number = 1) {
-    await delay(200)
-    
-    const product = mockProducts.find(p => p.id === productId)
-    if (!product) {
-      throw {
-        response: {
-          status: 404,
-          data: { error: 'Product not found' }
-        }
-      }
-    }
-
-    if (quantity > product.stock) {
-      throw {
-        response: {
-          status: 422,
-          data: { error: 'Insufficient stock' }
-        }
-      }
-    }
-
-    const items = getCartFromStorage()
-    const existingItem = items.find(i => i.product_id === productId)
-
-    if (existingItem) {
-      existingItem.quantity += quantity
-    } else {
-      items.push({
-        id: items.length + 1,
+  async addItem(productId: number, quantity: number = 1): Promise<CartResponse> {
+    try {
+      const response = await api.post('/cart/items', {
         product_id: productId,
-        quantity
-      })
-    }
-
-    saveCartToStorage(items)
-    const enrichedItems = enrichCartItems(items)
-    const { total, total_items } = calculateTotal(enrichedItems)
-
-    return {
-      success: true,
-      cart: {
-        items: enrichedItems,
-        total,
-        total_items
-      }
+        quantity,
+      });
+      return normalizeCartImages(response.data);
+    } catch (error: any) {
+      console.error('Add to cart failed:', error);
+      throw new Error(
+        error.response?.data?.message ||
+          `Failed to add product #${productId} (qty: ${quantity})`
+      );
     }
   },
 
-  // Update cart item
-  async updateItem(itemId: number, quantity: number) {
-    await delay(200)
-    
-    const items = getCartFromStorage()
-    const item = items.find(i => i.id === itemId)
+  async updateItem(itemId: number, quantity: number): Promise<CartResponse> {
+    if (quantity < 1) throw new Error('Quantity must be at least 1');
 
-    if (!item) {
-      throw {
-        response: {
-          status: 404,
-          data: { error: 'Cart item not found' }
-        }
-      }
-    }
-
-    const product = mockProducts.find(p => p.id === item.product_id)
-    if (!product) {
-      throw {
-        response: {
-          status: 404,
-          data: { error: 'Product not found' }
-        }
-      }
-    }
-
-    if (quantity > product.stock) {
-      throw {
-        response: {
-          status: 422,
-          data: { error: 'Insufficient stock' }
-        }
-      }
-    }
-
-    if (quantity <= 0) {
-      const index = items.findIndex(i => i.id === itemId)
-      items.splice(index, 1)
-    } else {
-      item.quantity = quantity
-    }
-
-    saveCartToStorage(items)
-    const enrichedItems = enrichCartItems(items)
-    const { total, total_items } = calculateTotal(enrichedItems)
-
-    return {
-      success: true,
-      cart: {
-        items: enrichedItems,
-        total,
-        total_items
-      }
+    try {
+      // Note: your original CartController uses PATCH or PUT?
+      // Most REST APIs use PATCH for partial updates → try .patch first
+      const response = await api.patch(`/cart/items/${itemId}`, { quantity });
+      // If your backend expects PUT instead → change to .put()
+      return normalizeCartImages(response.data);
+    } catch (error: any) {
+      console.error('Update cart item failed:', error);
+      throw new Error(error.response?.data?.message || 'Failed to update quantity');
     }
   },
 
-  // Remove item from cart
-  async removeItem(itemId: number) {
-    await delay(200)
-    
-    const items = getCartFromStorage()
-    const index = items.findIndex(i => i.id === itemId)
-
-    if (index === -1) {
-      throw {
-        response: {
-          status: 404,
-          data: { error: 'Cart item not found' }
-        }
-      }
-    }
-
-    items.splice(index, 1)
-    saveCartToStorage(items)
-    const enrichedItems = enrichCartItems(items)
-    const { total, total_items } = calculateTotal(enrichedItems)
-
-    return {
-      success: true,
-      cart: {
-        items: enrichedItems,
-        total,
-        total_items
-      }
+  async removeItem(itemId: number): Promise<CartResponse> {
+    try {
+      const response = await api.delete(`/cart/items/${itemId}`);
+      return normalizeCartImages(response.data);
+    } catch (error: any) {
+      console.error('Remove item failed:', error);
+      throw new Error(error.response?.data?.message || 'Failed to remove item');
     }
   },
 
-  // Clear cart
-  async clearCart() {
-    await delay(200)
-    
-    localStorage.removeItem(CART_STORAGE_KEY)
-    return { success: true }
+  async clearCart(): Promise<{ success: boolean; message?: string }> {
+    try {
+      // Your original controller has clear() but no dedicated route shown
+      // Adjust method & path to match your actual route
+      // Option A: DELETE /cart
+      const response = await api.delete('/cart');
+      // Option B: if you have POST /cart/clear → use api.post('/cart/clear')
+      return response.data;
+    } catch (error: any) {
+      console.error('Clear cart failed:', error);
+      throw new Error(error.response?.data?.message || 'Failed to clear cart');
+    }
   },
 
-  // Get cart item count (for header)
-  getCartItemCount(): number {
-    const items = getCartFromStorage()
-    return items.reduce((sum, item) => sum + item.quantity, 0)
-  }
-}
+  // Useful for cart badge / navbar count
+  async getItemCount(): Promise<number> {
+    try {
+      const cart = await this.getCart();
+      return cart.total_items ?? cart.items.reduce((sum, i) => sum + i.quantity, 0);
+    } catch {
+      return 0;
+    }
+  },
+};
+
+export default cartService;

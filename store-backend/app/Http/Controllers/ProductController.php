@@ -4,133 +4,142 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Exception;
 
 class ProductController extends Controller
 {
-    /**
-     * Display a listing of active products with optional filters.
-     */
     public function index(Request $request)
     {
         $query = Product::query()
             ->where('is_active', true)
-            ->with('category')
-            ->when($request->category, function ($q, $category) {
-                return $q->whereHas('category', function ($c) use ($category) {
-                    $c->where('slug', $category);
-                });
-            })
-            ->when($request->search, function ($q, $search) {
-                return $q->where('name', 'like', '%' . $search . '%')
-                         ->orWhere('description', 'like', '%' . $search . '%');
-            })
-            ->latest();
+            ->with('category');
+        if ($request->filled('category')) {
+            $query->whereHas('category', fn($q) => $q->where('slug', $request->category));
+        }
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
 
-        return response()->json($query->paginate(12));
+        $products = $query->latest()->paginate($request->integer('per_page', 12));
+
+        return response()->json($products);
     }
-
-    /**
-     * Display the specified product by slug.
-     */
     public function show(string $slug)
     {
         $product = Product::where('slug', $slug)
+            ->where('is_active', true)
             ->with('category')
             ->firstOrFail();
 
         return response()->json($product);
     }
-
-    /**
-     * Store a newly created product (admin only).
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'category_id'   => 'required|exists:categories,id',
-            'name'          => 'required|string|max:200',
-            'slug'          => 'required|string|unique:products,slug',
-            'description'   => 'nullable|string',
-            'price'         => 'required|numeric|min:0',
-            'stock'         => 'required|integer|min:0',
-            'images'        => 'nullable|array',
-            'images.*'      => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'is_active'     => 'sometimes|boolean',
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|unique:products,slug',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'discount_starts_at' => 'nullable|date',
+            'discount_ends_at' => 'nullable|date|after_or_equal:discount_starts_at',
+            'stock' => 'required|integer|min:0',
+            'is_active' => 'boolean',
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5048',
+            'discount_ids' => 'nullable|array',
+            'discount_ids.*' => 'exists:discounts,id',
         ]);
 
-        $images = [];
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $images[] = $image->store('products', 'public');
-            }
+        if (empty($validated['slug'])) {
+            $validated['slug'] = \Str::slug($validated['name']);
         }
 
-        $validated['images'] = $images;
+        if ($request->hasFile('images')) {
+            $paths = [];
+            foreach ($request->file('images') as $image) {
+                $paths[] = $image->store('products', 'public');
+            }
+            $validated['images'] = $paths;
+        }
 
-        $product = Product::create($validated);
-        $product->load('category');
+        DB::transaction(function () use ($validated, &$product) {
+            $product = Product::create($validated);
 
-        return response()->json($product, 201);
+            if (!empty($validated['discount_ids'])) {
+                $product->discounts()->attach($validated['discount_ids']);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Product created successfully',
+            'product' => $product->fresh(['category', 'discounts']),
+        ], 201);
     }
-
-    /**
-     * Update the specified product (admin only).
-     */
     public function update(Request $request, int $id)
     {
         $product = Product::findOrFail($id);
 
         $validated = $request->validate([
-            'category_id'   => 'sometimes|required|exists:categories,id',
-            'name'          => 'sometimes|required|string|max:200',
-            'slug'          => 'sometimes|required|string|unique:products,slug,' . $id,
-            'description'   => 'nullable|string',
-            'price'         => 'sometimes|required|numeric|min:0',
-            'stock'         => 'sometimes|required|integer|min:0',
-            'images'        => 'nullable|array',
-            'images.*'      => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-            'is_active'     => 'sometimes|boolean',
+            'category_id' => 'sometimes|exists:categories,id',
+            'name' => 'sometimes|string|max:255',
+            'slug' => 'nullable|string|unique:products,slug,' . $id,
+            'description' => 'nullable|string',
+            'price' => 'sometimes|numeric|min:0',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'discount_starts_at' => 'nullable|date',
+            'discount_ends_at' => 'nullable|date|after_or_equal:discount_starts_at',
+            'stock' => 'sometimes|integer|min:0',
+            'is_active' => 'boolean',
+            'images' => 'nullable|array|max:5',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:5048',
+            'discount_ids' => 'nullable|array',
+            'discount_ids.*' => 'exists:discounts,id',
         ]);
 
-        // Handle image replacement (delete old, upload new)
         if ($request->hasFile('images')) {
-            // Delete old images
-            if ($product->images) {
-                foreach ($product->images as $oldImage) {
-                    Storage::disk('public')->delete($oldImage);
-                }
-            }
-
-            $newImages = [];
+            $paths = [];
             foreach ($request->file('images') as $image) {
-                $newImages[] = $image->store('products', 'public');
+                $paths[] = $image->store('products', 'public');
             }
-            $validated['images'] = $newImages;
+            $validated['images'] = $paths;
         }
 
-        $product->update($validated);
-        $product->load('category');
+        DB::transaction(function () use ($product, $validated, $request) {
+            $product->update($validated);
 
-        return response()->json($product);
+            if ($request->has('discount_ids')) {
+                $product->discounts()->sync($validated['discount_ids'] ?? []);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product->fresh(['category', 'discounts']),
+        ]);
     }
-
-    /**
-     * Remove the specified product (admin only).
-     */
     public function destroy(int $id)
     {
         $product = Product::findOrFail($id);
-
-        // Delete all associated images
         if ($product->images) {
-            foreach ($product->images as $image) {
-                Storage::disk('public')->delete($image);
+            foreach (json_decode($product->images, true) as $path) {
+                $filePath = str_replace('/storage/', '', $path);
+                Storage::disk('public')->delete($filePath);
             }
         }
 
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted successfully']);
+        return response()->json([
+            'message' => 'Product deleted successfully'
+        ]);
     }
 }

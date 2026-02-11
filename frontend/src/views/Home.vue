@@ -1,4 +1,4 @@
-
+<!-- src/views/Home.vue -->
 <template>
   <div class="min-h-screen bg-gray-50">
     <!-- Hero Section -->
@@ -7,9 +7,11 @@
         <div class="flex items-center justify-center">
           <div class="text-center text-white">
             <h1 class="text-5xl md:text-6xl font-bold mb-4">Welcome to</h1>
-            <h2 class="text-6xl md:text-7xl font-black tracking-wider uppercase">NAK NAK<br />STORE</h2>
+            <h2 class="text-6xl md:text-7xl font-black tracking-wider uppercase">
+              NAK NAK<br />STORE
+            </h2>
             <p class="mt-6 text-lg md:text-xl opacity-90">
-              ⭐⭐⭐⭐⭐ The world's highest rated free ecommerce platform
+              ⭐⭐⭐⭐⭐ High Quality Products, Best Prices
             </p>
           </div>
         </div>
@@ -18,36 +20,78 @@
 
     <!-- Categories Section -->
     <section class="py-16 bg-gray-50">
-      <div class="w-full px-4">
-        <h2 class="text-3xl font-bold mb-12 text-center text-gray-800">Shop by Category</h2>
-        <div class="flex justify-center">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
-            <router-link
-              v-for="category in categories"
-              :key="category.id"
-              :to="{ name: 'Products', query: { category: category.slug } }"
-              class="group cursor-pointer flex justify-center"
+      <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-12 text-center text-gray-800">
+          Shop by Category
+        </h2>
+
+        <div v-if="loadingCategories" class="flex justify-center items-center py-20">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+
+        <div v-else-if="categoriesError" class="text-center py-12 text-gray-500">
+          {{ categoriesError }}
+        </div>
+
+        <div v-else-if="categories.length === 0" class="text-center py-12 text-gray-500">
+          No categories available
+        </div>
+
+        <div v-else class="flex justify-center">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full max-w-6xl">
+            <div
+              v-for="cat in categories"
+              :key="cat.id"
+              class="group relative overflow-hidden rounded-2xl aspect-[4/3] shadow-md hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gray-200"
             >
-              <div class="w-full max-w-xs">
-                <div class="bg-gray-200 rounded-2xl h-64 mb-4 overflow-hidden shadow-sm group-hover:shadow-md transition-all duration-300">
-                  <img
-                    v-if="category.image"
-                    :src="category.image"
-                    :alt="category.name"
-                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                  />
-                  <div
-                    v-else
-                    class="w-full h-full bg-gradient-to-br from-pink-300 to-pink-500 flex items-center justify-center"
-                  >
-                    <span class="text-white font-bold text-2xl">{{ category.name }}</span>
-                  </div>
-                </div>
-                <h3 class="text-xl font-bold text-center text-gray-800 group-hover:text-pink-600 transition-colors">
-                  {{ category.name }}
+              <!-- Public clickable link to products by category -->
+              <router-link
+                :to="{ name: 'Products', query: { category: cat.slug } }"
+                class="absolute inset-0 z-10"
+                :aria-label="'Shop ' + cat.name"
+              />
+
+              <!-- Category Image -->
+              <img
+                v-if="cat.image"
+                :src="cat.image"
+                @error="handleImageError($event)"
+                class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                :alt="`Image for ${cat.name}`"
+                loading="lazy"
+              />
+
+              <!-- Overlay with category name -->
+              <div
+                v-if="cat.image"
+                class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end z-20"
+              >
+                <h3 class="text-white text-2xl font-bold px-6 pb-6">
+                  {{ cat.name }}
                 </h3>
               </div>
-            </router-link>
+
+              <!-- Fallback if no image -->
+              <div
+                v-else
+                class="absolute inset-0 flex items-center justify-center bg-gray-300 z-20"
+              >
+                <span class="text-gray-600 text-xl font-medium">{{ cat.name }}</span>
+              </div>
+
+              <!-- Admin Edit Button (floating top-right) -->
+              <div v-if="isAdmin" class="absolute top-2 right-2 z-30">
+                <button
+                  @click.prevent="goToCategoryEdit(cat.slug || cat.id)"
+                  class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition flex items-center justify-center"
+                  title="Edit Category"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H11v-.828l9.586-9.586z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -55,31 +99,54 @@
 
     <!-- Featured Products Section -->
     <section class="py-16 bg-white">
-      <!-- Header Section -->
-      <div class="px-3 sm:px-4 mb-12">
-        <div class="flex justify-between items-end">
-          <div>
-            <h2 class="text-3xl font-bold text-gray-800">Featured Products</h2>
-            <p class="text-gray-500 mt-2">Our top picks for you this week</p>
-          </div>
-          <router-link
-            to="/products"
-            class="text-pink-600 font-semibold hover:text-pink-700 hover:underline transition-colors"
-          >
-            View All →
-          </router-link>
-        </div>
-      </div>
+      <div class="container mx-auto px-4">
+        <h2 class="text-3xl font-bold mb-12 text-center text-gray-800">
+          Featured Products
+        </h2>
 
-      <!-- Full screen grid layout for cards - TRUE FULL WIDTH -->
-      <div class="w-full overflow-x-hidden">
-        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3 lg:gap-4 px-2 sm:px-3 lg:px-4">
-          <ProductCard
-            v-for="product in products"
-            :key="product.id"
-            :product="product"
-            @add-to-cart="handleAddToCart"
-          />
+        <div v-if="loadingProducts" class="flex justify-center items-center py-20">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        </div>
+
+        <div v-else-if="productsError" class="text-center py-12 text-gray-500">
+          {{ productsError }}
+        </div>
+
+        <div v-else-if="featuredProducts.length === 0" class="text-center py-12 text-gray-500">
+          No products available
+        </div>
+
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div v-for="product in featuredProducts" :key="product.id" class="relative">
+            <!-- Always show the product card -->
+            <ProductCard
+              :product="{
+                ...product,
+                image: product.display_image || '/images/placeholder.jpg'
+              }"
+            />
+
+            <!-- Clickable overlay only if slug exists -->
+            <router-link
+              v-if="product.slug"
+              :to="{ name: 'ProductDetail', params: { slug: product.slug } }"
+              class="absolute inset-0 z-10"
+              :aria-label="'View details for ' + product.name"
+            />
+
+            <!-- Error overlay if slug is missing -->
+            <div
+              v-else
+              class="absolute inset-0 bg-red-900/80 flex items-center justify-center rounded-lg text-center z-20"
+            >
+              <div class="text-white">
+                <p class="font-bold text-lg">Missing Slug</p>
+                <p class="text-sm">ID: {{ product.id }}</p>
+                <p class="text-sm opacity-90">{{ product.name }}</p>
+                <p class="text-xs mt-2">Cannot view details</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -87,42 +154,90 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { mockCategories, mockProducts } from '@/services/mockData'
-import { cartService } from '@/services/cart'
+import { productService } from '@/services/products'
+import { categoryService } from '@/services/categorie'
+import { authService } from '@/services/auth' // ← Added for admin check
 import ProductCard from '@/components/ProductCard.vue'
+import type { Category } from '@/services/categorie'
 
 const router = useRouter()
 
-// Reactive state
-const categories = ref<any[]>([])
-const products = ref<any[]>([])
+const categories = ref<Category[]>([])
+const categoriesError = ref('')
+const allProducts = ref<any[]>([])
+const productsError = ref('')
+const loadingCategories = ref(true)
+const loadingProducts = ref(false)
 
-onMounted(() => {
-  // First 3 categories only
-  categories.value = mockCategories.slice(0, 3)
-  // Show ALL mock products (to display multiple rows like in your screenshot)
-  products.value = mockProducts
+const isMounted = ref(true)
+
+// Admin check
+const isAdmin = computed(() => authService.isAuthenticated() && authService.isAdmin())
+
+const featuredProducts = computed(() => allProducts.value.slice(0, 18))
+
+onMounted(async () => {
+  await Promise.allSettled([
+    loadCategories(),
+    loadFeaturedProducts()
+  ])
 })
 
-const handleAddToCart = async (productId: number) => {
-  const token = localStorage.getItem('token')
-  if (!token) {
-    router.push({ name: 'Login' })
-    return
-  }
+onUnmounted(() => {
+  isMounted.value = false
+})
 
+// Safe navigation to category edit page
+const goToCategoryEdit = (slugOrId: string | number) => {
+  router.push({ name: 'CategoryEdit', params: { slug: String(slugOrId) } }).catch((err) => {
+    if (err.name !== 'NavigationDuplicated') {
+      console.warn('Category edit route not available:', err)
+      alert('Category edit page is not set up yet.')
+    }
+  })
+}
+
+const loadCategories = async () => {
+  if (!isMounted.value) return
+  loadingCategories.value = true
   try {
-    await cartService.addItem(productId, 1)
-    alert('✅ Added to cart successfully!')
-  } catch (error: any) {
-    console.error('Error adding to cart:', error)
-    alert(error.response?.data?.error || 'Failed to add to cart')
+    const res = await categoryService.getCategories()
+    if (isMounted.value) categories.value = res
+  } catch (err: any) {
+    console.error('Failed to load categories:', err)
+    if (isMounted.value) {
+      categories.value = []
+      categoriesError.value = err?.response?.status === 401
+        ? 'Categories are temporarily unavailable — you can still browse the store as a guest.'
+        : 'Failed to load categories.'
+    }
+  } finally {
+    if (isMounted.value) loadingCategories.value = false
   }
 }
-</script>
 
-<style scoped>
-/* Remove the max-width constraint to allow full width */
-</style>
+const loadFeaturedProducts = async () => {
+  if (!isMounted.value) return
+  loadingProducts.value = true
+  try {
+    const res = await productService.getProducts(1)
+    if (isMounted.value) allProducts.value = res.data || []
+  } catch (err: any) {
+    console.error('Failed to load featured products:', err)
+    if (isMounted.value) {
+      allProducts.value = []
+      productsError.value = err?.response?.status === 401
+        ? 'Products are temporarily unavailable — please continue browsing as a guest.'
+        : 'Failed to load featured products.'
+    }
+  } finally {
+    if (isMounted.value) loadingProducts.value = false
+  }
+}
+
+const handleImageError = (e: Event) => {
+  ;(e.target as HTMLImageElement).src = 'https://placehold.co/400x300?text=No+Image'
+}
+</script>

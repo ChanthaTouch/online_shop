@@ -53,13 +53,15 @@ onMounted(async () => {
 
   loading.value = true
   try {
-    const userData = await authService.getMe()
-    user.value = userData
+    const response = await authService.getMe()
+    // Backend returns { user: {...} }, extract the user object
+    user.value = response.user || response
   } catch (error) {
     console.error('Error loading profile:', error)
+    // Fallback to localStorage data
     user.value = {
       name: localStorage.getItem('userName') || 'User',
-      email: localStorage.getItem('userName') || 'Not provided',
+      email: localStorage.getItem('userEmail') || 'Not provided',
       role: authService.getUserRole()
     }
   } finally {

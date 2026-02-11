@@ -17,20 +17,38 @@ class CategoryController extends Controller
     }
 
     // POST /categories
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
+public function store(Request $request)
+{
+    $validated = $request->validate([
+        'name'        => 'required|string|max:255|unique:categories,name',
+        'slug'        => 'nullable|string|max:255|unique:categories,slug',
+        'description' => 'nullable|string',
+        'image'       => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // ← important change
+    ]);
 
-        $category = Category::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-        ]);
+    $data = [
+        'name'        => $validated['name'],
+        'description' => $validated['description'] ?? null,
+    ];
 
-        return response()->json($category, 201);
+    // Auto-generate slug if not provided
+    $data['slug'] = $request->filled('slug')
+        ? Str::slug($request->input('slug'))
+        : Str::slug($validated['name']);
+
+    // Handle image upload
+    if ($request->hasFile('image')) {
+        if (!$request->file('image')->isValid()) {
+            \Log::error('Image upload invalid: ' . $request->file('image')->getErrorMessage());
+        }
+        $path = $request->file('image')->store('categories', 'public');
+        \Log::info('Image stored at: ' . $path);
+        $data['image'] = $path;
     }
+    $category = Category::create($data);
 
+    return response()->json($category, 201);
+}
     // PUT /categories/{id}
     public function update(Request $request, $id)
     {

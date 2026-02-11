@@ -11,17 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
+        Schema::create('discount_product', function (Blueprint $table) {
             $table->id();
-
-            $table->string('name')->unique();
-            $table->string('slug')->unique();
-
-            $table->text('description')->nullable();
-
-            // ✅ FIX: store image PATH, not image itself
-            $table->string('image')->nullable();
-
+             $table->foreignId('discount_id')->constrained()->cascadeOnDelete();
+             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }
@@ -31,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categories');
+        Schema::dropIfExists('discount_product');
     }
 };

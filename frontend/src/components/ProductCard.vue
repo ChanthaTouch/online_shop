@@ -1,65 +1,52 @@
+<!-- src/components/ProductCard.vue -->
 <template>
-  <div class="bg-white rounded-lg overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col shadow-sm">
-    <!-- Product Image -->
-    <router-link 
-      :to="{ name: 'ProductDetail', params: { slug: product.slug } }"
-      class="relative block overflow-hidden bg-gray-200 h-48 sm:h-56 lg:h-64"
-    >
-      <img 
-        :src="product.images?.[0]" 
-        :alt="product.name"
-        class="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-      />
-      <!-- Badge -->
-      <div v-if="product.discount_price" class="absolute top-3 right-3 bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-        SALE
-      </div>
-    </router-link>
+  <div class="border rounded-lg p-4 shadow-sm hover:shadow-md transition bg-white">
+    <img 
+      :src="product.image || '/images/placeholder.jpg'" 
+      :alt="product.name"
+      class="w-full h-48 object-cover rounded bg-gray-100"
+      loading="lazy"
+    />
+    <h3 class="font-semibold mt-3 text-lg">{{ product.name }}</h3>
+    <p v-if="product.description" class="text-gray-600 text-sm line-clamp-2 mt-1">
+      {{ product.description }}
+    </p>
 
-    <!-- Product Info -->
-    <div class="p-3 sm:p-4 flex flex-col flex-grow">
-      <!-- Category -->
-      <div v-if="product.category" class="text-xs text-gray-500 mb-1">
-        {{ product.category.name }}
-      </div>
-
-      <!-- Product Name -->
-      <router-link 
-        :to="{ name: 'ProductDetail', params: { slug: product.slug } }"
-        class="font-bold text-gray-800 hover:text-pink-500 transition line-clamp-2 text-xs sm:text-sm flex-grow"
-      >
-        {{ product.name }}
-      </router-link>
-
-      <!-- Price -->
-      <div class="mt-2 sm:mt-3 flex items-baseline gap-1">
-        <span class="text-pink-600 font-bold text-sm sm:text-base">
-          ${{ (product.discount_price || product.price).toFixed(2) }}
+    <div class="flex justify-between items-end mt-4">
+      <div>
+        <span class="text-lg font-bold text-pink-600">
+          {{ formatPrice(product.price) }}$
         </span>
-        <span v-if="product.discount_price" class="text-gray-500 line-through text-xs">
-          ${{ product.price.toFixed(2) }}
-        </span>
+        <div v-if="product.stock !== null && product.stock !== undefined" class="text-xs mt-1">
+          <span v-if="product.stock > 10" class="text-green-600">In Stock</span>
+          <span v-else-if="product.stock > 0" class="text-orange-600 font-medium">
+            Only {{ product.stock }} left!
+          </span>
+          <span v-else class="text-red-600 font-medium">Out of Stock</span>
+        </div>
       </div>
 
-      <!-- Stock Status -->
-      <div class="mt-2 mb-2 sm:mb-3">
-        <span :class="[
-          'text-xs font-semibold',
-          product.stock > 5 ? 'text-green-600' : product.stock > 0 ? 'text-yellow-600' : 'text-red-600'
-        ]">
-          {{ product.stock > 0 ? `${product.stock} in stock` : 'Out of stock' }}
-        </span>
+      <div v-if="(product.stock ?? 0) > 0" class="flex flex-col items-end gap-2">
+        <input 
+          v-model.number="quantity"
+          type="number" 
+          min="1"
+          :max="product.stock ?? 9999"
+          class="w-20 border border-gray-300 rounded px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-pink-500"
+        />
+        <button 
+          @click="addToCart"
+          :disabled="adding || quantity < 1 || quantity > (product.stock ?? 0)"
+          class="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-5 py-2 rounded font-medium transition flex items-center gap-2"
+        >
+          <span v-if="adding">Adding...</span>
+          <span v-else>Add to Cart</span>
+        </button>
       </div>
 
-      <!-- Add to Cart Button -->
-      <button 
-        @click="handleAddToCart"
-        :disabled="product.stock === 0"
-        class="w-full px-3 py-1.5 sm:py-2 bg-pink-500 text-white rounded-lg font-semibold hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition text-xs sm:text-sm"
-      >
-        <span v-if="product.stock > 0">Add to Cart</span>
-        <span v-else>Out of Stock</span>
-      </button>
+      <div v-else class="text-red-600 font-medium py-2">
+        Out of Stock
+      </div>
     </div>
   </div>
 </template>
@@ -67,26 +54,59 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { cartService } from '@/services/cart'
 
 const router = useRouter()
-const quantity = ref(1)
 
-const props = defineProps({
+const props = defineProps<{
   product: {
-    type: Object,
-    required: true
+    id: number
+    name: string
+    description?: string
+    price: number
+    stock?: number
+    image: string
   }
-})
+}>()
 
-const emit = defineEmits(['add-to-cart'])
+const quantity = ref(1)
+const adding = ref(false)
 
-const handleAddToCart = () => {
+const formatPrice = (price: number) => price.toFixed(2)
+
+const addToCart = async () => {
   const token = localStorage.getItem('token')
   if (!token) {
+    alert('Please login first')
     router.push({ name: 'Login' })
     return
   }
 
-  emit('add-to-cart', props.product.id)
+  const maxStock = props.product.stock ?? 0
+  if (quantity.value > maxStock) {
+    alert(`Only ${maxStock} items available`)
+    quantity.value = maxStock
+    return
+  }
+
+  adding.value = true
+  try {
+    await cartService.addItem(props.product.id, quantity.value)
+    alert(`Added ${quantity.value} × ${props.product.name} to cart!`)
+    quantity.value = 1
+  } catch (error: any) {
+    alert(error.response?.data?.message || 'Ohh so sorry, This product has been no stock now🙏❤️')
+  } finally {
+    adding.value = false
+  }
 }
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+</style>

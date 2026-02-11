@@ -1,25 +1,17 @@
 <template>
-  <router-view />
+  <div id="app" class="min-h-screen bg-gray-50">
+    <HeaderNav />
+    <main class="p-4 max-w-4xl mx-auto">
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
+import HeaderNav from './components/HeaderNav.vue'
 </script>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body, #app {
-  height: 100%;
-  width: 100%;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+html, body, #app { height: 100%; width: 100%; }
+body { font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
 </style>

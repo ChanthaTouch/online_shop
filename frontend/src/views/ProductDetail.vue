@@ -1,148 +1,99 @@
+<!-- src/views/ProductDetail.vue -->
 <template>
   <div class="min-h-screen bg-gray-50 py-12">
     <div class="container mx-auto px-4">
-      <div v-if="product" class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <!-- Product Images -->
+      <div v-if="loading" class="flex justify-center items-center h-64">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+      </div>
+
+      <div v-else-if="product" class="grid grid-cols-1 md:grid-cols-2 gap-12">
         <div>
-          <div class="bg-white rounded-lg p-4 mb-4">
+          <div class="bg-white rounded-lg p-4 mb-4 shadow-sm">
             <img 
-              :src="selectedImage"
+              :src="selectedImage" 
               :alt="product.name"
               class="w-full h-96 object-cover rounded-lg"
+              @error="handleImageError"
             />
           </div>
-          <div v-if="product.images" class="grid grid-cols-4 gap-2">
+          
+          <div v-if="product.image_urls && product.image_urls.length > 1" class="grid grid-cols-4 gap-2">
             <div 
-              v-for="(img, idx) in product.images"
+              v-for="(img, idx) in product.image_urls" 
               :key="idx"
               @click="selectedImage = img"
-              class="cursor-pointer bg-white rounded-lg p-2 border-2"
-              :class="selectedImage === img ? 'border-pink-500' : 'border-gray-200'"
+              class="cursor-pointer bg-white rounded-lg p-2 border-2 transition-all"
+              :class="selectedImage === img ? 'border-pink-500 shadow-sm' : 'border-gray-200 hover:border-pink-300'"
             >
-              <img :src="img" :alt="`${product.name} ${idx}`" class="w-full h-20 object-cover rounded" />
+              <img :src="img" :alt="`${product.name} thumbnail ${idx + 1}`" class="w-full h-20 object-cover rounded" @error="handleImageError" />
             </div>
           </div>
         </div>
 
-        <!-- Product Details -->
-        <div class="bg-white rounded-lg p-8">
-          <h1 class="text-4xl font-bold mb-4">{{ product.name }}</h1>
-          
-          <!-- Category -->
-          <div class="mb-4">
-            <router-link 
-              v-if="product.category"
-              :to="{ name: 'Products', query: { category: product.category.slug } }"
-              class="text-pink-500 hover:underline"
-            >
+        <div class="bg-white rounded-lg p-8 shadow-sm">
+          <div class="mb-6">
+            <span v-if="product.category" class="text-pink-500 font-semibold uppercase tracking-wider text-sm">
               {{ product.category.name }}
-            </router-link>
+            </span>
+            <h1 class="text-4xl font-bold mt-2">{{ product.name }}</h1>
           </div>
 
-          <!-- Price -->
-          <div class="mb-6">
-            <div class="flex items-baseline gap-3">
-              <span class="text-3xl font-bold text-pink-600">${{ discountPrice }}</span>
-              <span v-if="product.discount_price" class="text-xl text-gray-500 line-through">
-                ${{ product.price }}
+          <p class="text-gray-700 mb-8">{{ product.description || 'No description available.' }}</p>
+
+          <div class="mb-8">
+            <div class="flex items-end gap-4">
+              <span v-if="product.discount_price" class="text-2xl line-through text-gray-500">
+                ${{ product.price.toFixed(2) }}
+              </span>
+              <span class="text-4xl font-bold text-pink-600">
+                ${{ discountPrice }}
+              </span>
+              <span v-if="discountPercentage > 0" class="ml-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                -{{ discountPercentage }}%
               </span>
             </div>
-            <p v-if="product.discount_price" class="text-green-600 mt-2">
-              Save {{ discountPercentage }}%
-            </p>
           </div>
 
-          <!-- Description -->
-          <div class="mb-6">
-            <p class="text-gray-600 text-lg">{{ product.description }}</p>
-          </div>
-
-          <!-- Stock Status -->
-          <div class="mb-6">
-            <p :class="[
-              'text-lg font-semibold',
-              product.stock > 0 ? 'text-green-600' : 'text-red-600'
-            ]">
-              {{ product.stock > 0 ? `${product.stock} in stock` : 'Out of stock' }}
-            </p>
-          </div>
-
-          <!-- Size/Attributes Selection -->
-          <div v-if="availableAttributes.length > 0" class="mb-6">
-            <h3 class="font-bold mb-3">Select Options:</h3>
-            <div v-for="attr in availableAttributes" :key="attr" class="mb-4">
-              <label class="block text-sm font-semibold mb-2 capitalize">{{ attr }}</label>
-              <div class="flex flex-wrap gap-2">
-                <button 
-                  v-for="val in getAttributeValues(attr)"
-                  :key="val"
-                  @click="selectedAttributes[attr] = val"
-                  :class="[
-                    'px-4 py-2 border rounded-lg font-semibold transition',
-                    selectedAttributes[attr] === val
-                      ? 'bg-pink-500 text-white border-pink-500'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-pink-500'
-                  ]"
-                >
-                  {{ val }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quantity and Add to Cart -->
           <div class="mb-8">
-            <label class="block text-sm font-semibold mb-2">Quantity</label>
-            <div class="flex items-center gap-4">
-              <button 
-                @click="quantity = Math.max(1, quantity - 1)"
-                :disabled="quantity <= 1"
-                class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-              >
-                −
-              </button>
+            <span class="text-lg font-medium">Availability:</span>
+            <span class="ml-3 text-lg" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
+              {{ product.stock > 0 ? `${product.stock} Units in Stock` : 'Out of Stock' }}
+            </span>
+          </div>
+
+          <div class="mt-8">
+            <!-- Quantity input - only show when in stock -->
+            <div v-if="product.stock > 0" class="flex items-center gap-4 mb-6">
+              <label class="font-medium text-lg">Quantity:</label>
               <input 
                 v-model.number="quantity"
-                type="number"
-                min="1"
+                type="number" 
+                min="1" 
                 :max="product.stock"
-                class="w-20 px-4 py-2 border border-gray-300 rounded-lg text-center"
+                class="w-28 border border-gray-300 rounded-lg px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
               />
-              <button 
-                @click="quantity = Math.min(product.stock, quantity + 1)"
-                :disabled="quantity >= product.stock"
-                class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-              >
-                +
-              </button>
             </div>
-          </div>
 
-          <!-- Add to Cart Button -->
-          <button 
-            @click="addToCart"
-            :disabled="product.stock === 0"
-            class="w-full px-6 py-4 bg-pink-500 text-white rounded-lg font-bold text-lg hover:bg-pink-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-          >
-            <span v-if="product.stock > 0">🛒 Add to Cart</span>
-            <span v-else>Out of Stock</span>
-          </button>
+            <!-- Add to Cart Button or Out of Stock Message -->
+            <button 
+              v-if="product.stock > 0"
+              @click="addToCart"
+              :disabled="adding || quantity < 1 || quantity > product.stock"
+              class="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-lg font-bold text-xl transition flex items-center justify-center gap-3"
+            >
+              <span v-if="adding">Adding...</span>
+              <span v-else>Add to Cart</span>
+            </button>
 
-          <!-- Share -->
-          <div class="mt-8 pt-8 border-t">
-            <p class="text-sm text-gray-600 mb-4">Share this product:</p>
-            <div class="flex gap-4">
-              <button class="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700">f</button>
-              <button class="p-2 bg-blue-400 text-white rounded-full hover:bg-blue-500">𝕏</button>
-              <button class="p-2 bg-green-600 text-white rounded-full hover:bg-green-700">💬</button>
+            <div v-else class="w-full bg-gray-300 text-gray-700 py-4 rounded-lg font-bold text-xl text-center">
+              Out of Stock
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-else class="text-center py-12">
-        <p class="text-gray-500">Loading product details...</p>
+      <div v-else class="text-center py-20">
+        <h3 class="text-2xl font-bold text-gray-400">Product not found</h3>
       </div>
     </div>
   </div>
@@ -153,15 +104,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productService } from '@/services/products'
 import { cartService } from '@/services/cart'
-import { mockCategories } from '@/services/mockData'
 
 const route = useRoute()
 const router = useRouter()
+
 const product = ref<any>(null)
-const selectedImage = ref('')
+const selectedImage = ref<string>('')
+const loading = ref(true)
+const adding = ref(false)
 const quantity = ref(1)
-const selectedAttributes = ref({})
-const loading = ref(false)
 
 onMounted(async () => {
   loading.value = true
@@ -169,18 +120,16 @@ onMounted(async () => {
     const slug = route.params.slug as string
     product.value = await productService.getProductBySlug(slug)
     
-    // Add category info
-    const category = mockCategories.find(c => c.id === product.value.category_id)
-    if (category) {
-      product.value.category = category
-    }
-    
-    if (product.value.images && product.value.images.length > 0) {
-      selectedImage.value = product.value.images[0]
+    if (product.value.primary_image) {
+      selectedImage.value = product.value.primary_image
+    } else if (product.value.image_urls && product.value.image_urls.length > 0) {
+      selectedImage.value = product.value.image_urls[0]
+    } else {
+      selectedImage.value = '/images/placeholder.jpg'
     }
   } catch (error: any) {
     console.error('Error loading product:', error)
-    alert(error.response?.data?.error || 'Product not found')
+    alert(error.response?.data?.message || 'Product not found')
     router.push({ name: 'Products' })
   } finally {
     loading.value = false
@@ -188,7 +137,7 @@ onMounted(async () => {
 })
 
 const discountPrice = computed(() => {
-  if (!product.value) return 0
+  if (!product.value) return '0.00'
   return (product.value.discount_price || product.value.price).toFixed(2)
 })
 
@@ -198,29 +147,41 @@ const discountPercentage = computed(() => {
   return Math.round(discount)
 })
 
-const availableAttributes = computed(() => {
-  return [] // No attributes for now
-})
-
-const getAttributeValues = (attr: string) => {
-  return []
+const handleImageError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
 }
 
 const addToCart = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      router.push({ name: 'Login' })
-      return
-    }
+  if (!product.value) return
 
+  const token = localStorage.getItem('token')
+  if (!token) {
+    alert('Please login first!')
+    router.push({ name: 'Login' })
+    return
+  }
+
+  if (quantity.value > product.value.stock) {
+    alert(`Only ${product.value.stock} items available`)
+    quantity.value = product.value.stock
+    return
+  }
+
+  adding.value = true
+  try {
     await cartService.addItem(product.value.id, quantity.value)
-    alert('✅ Added to cart successfully!')
+    alert(`Added ${quantity.value} × ${product.value.name} to cart successfully!`)
     quantity.value = 1
-    selectedAttributes.value = {}
   } catch (error: any) {
-    console.error('Error adding to cart:', error)
-    alert(error.response?.data?.error || 'Failed to add to cart')
+    let msg = 'Ohh so sorry, This product has been no stock now🙏❤️'
+    if (error.response?.data?.message) {
+      msg = error.response.data.message  // This will show "Only X more can be added..." etc.
+    } else if (error.response?.data?.errors) {
+      msg = Object.values(error.response.data.errors).flat().join(', ')
+    }
+    alert(msg)
+  } finally {
+    adding.value = false
   }
 }
 </script>
