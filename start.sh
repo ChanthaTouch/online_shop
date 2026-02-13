@@ -11,7 +11,7 @@ npm run build
 cp -r dist/* ../store-backend/public/
 
 # Step 3: Start Laravel backend
-cd ../store-backend
-composer install --no-dev --optimize-autoloader
-php artisan migrate --force
-php artisan serve --host=0.0.0.0 --port=8080
+cd store-backend
+ composer install --no-dev --optimize-autoloader 
+ php artisan migrate --force 
+ php artisan serve --host=0.0.0.0 --port=8080
