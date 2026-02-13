@@ -1,99 +1,153 @@
-<!-- src/views/ProductDetail.vue -->
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="container mx-auto px-4">
-      <div v-if="loading" class="flex justify-center items-center h-64">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+  <div class="min-h-screen bg-[#FDFCFB] text-[#2C1810] selection:bg-amber-100">
+    <div class="absolute top-0 right-0 w-1/3 h-screen bg-gradient-to-l from-amber-50/40 to-transparent -z-10 pointer-events-none" />
+
+    <div class="container mx-auto px-6 py-8 max-w-7xl">
+      <nav class="mb-12">
+        <button 
+          @click="router.back()" 
+          class="group flex items-center text-[10px] uppercase tracking-[0.2em] font-bold text-stone-400 hover:text-amber-800 transition-all"
+        >
+          <span class="mr-3 transition-transform group-hover:-translate-x-2">
+            <svg width="20" height="8" viewBox="0 0 20 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0.646447 3.64645C0.451184 3.84171 0.451184 4.15829 0.646447 4.35355L3.82843 7.53553C4.02369 7.7308 4.34027 7.7308 4.53553 7.53553C4.7308 7.34027 4.7308 7.02369 4.53553 6.82843L1.70711 4L4.53553 1.17157C4.7308 0.976311 4.7308 0.659728 4.53553 0.464466C4.34027 0.269204 4.02369 0.269204 3.82843 0.464466L0.646447 3.64645ZM20 3.5L1 3.5V4.5L20 4.5V3.5Z" fill="currentColor"/>
+            </svg>
+          </span>
+          Back to Collection
+        </button>
+      </nav>
+
+      <div v-if="loading" class="flex flex-col justify-center items-center h-[60vh]">
+        <div class="w-12 h-12 border-2 border-amber-100 border-t-amber-800 rounded-full animate-spin"></div>
+        <p class="mt-6 text-[10px] uppercase tracking-[0.3em] text-stone-400 font-bold">Refining Details...</p>
       </div>
 
-      <div v-else-if="product" class="grid grid-cols-1 md:grid-cols-2 gap-12">
-        <div>
-          <div class="bg-white rounded-lg p-4 mb-4 shadow-sm">
+      <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+        
+        <div class="space-y-8">
+          <div class="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-stone-200 group">
             <img 
               :src="selectedImage" 
               :alt="product.name"
-              class="w-full h-96 object-cover rounded-lg"
+              class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
               @error="handleImageError"
             />
+            <div v-if="discountPercentage > 0" class="absolute top-8 left-8 bg-white/90 backdrop-blur-md px-5 py-2 rounded-full shadow-sm">
+              <span class="text-[10px] font-bold text-rose-600 tracking-widest uppercase">{{ discountPercentage }}% OFF</span>
+            </div>
           </div>
           
-          <div v-if="product.image_urls && product.image_urls.length > 1" class="grid grid-cols-4 gap-2">
-            <div 
-              v-for="(img, idx) in product.image_urls" 
-              :key="idx"
+          <div v-if="product.image_urls?.length > 1" class="flex gap-4 px-2 overflow-x-auto scrollbar-hide">
+            <button 
+              v-for="(img, idx) in product.image_urls" :key="idx"
               @click="selectedImage = img"
-              class="cursor-pointer bg-white rounded-lg p-2 border-2 transition-all"
-              :class="selectedImage === img ? 'border-pink-500 shadow-sm' : 'border-gray-200 hover:border-pink-300'"
+              class="relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all flex-shrink-0"
+              :class="selectedImage === img ? 'border-amber-700 scale-105 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'"
             >
-              <img :src="img" :alt="`${product.name} thumbnail ${idx + 1}`" class="w-full h-20 object-cover rounded" @error="handleImageError" />
-            </div>
+              <img :src="img" class="w-full h-full object-cover" @error="handleImageError" />
+            </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-lg p-8 shadow-sm">
-          <div class="mb-6">
-            <span v-if="product.category" class="text-pink-500 font-semibold uppercase tracking-wider text-sm">
+        <div class="lg:pl-8">
+          <div class="max-w-md">
+            <div v-if="product.category" class="text-amber-700 text-[10px] font-bold uppercase tracking-[0.4em] mb-4">
               {{ product.category.name }}
-            </span>
-            <h1 class="text-4xl font-bold mt-2">{{ product.name }}</h1>
-          </div>
-
-          <p class="text-gray-700 mb-8">{{ product.description || 'No description available.' }}</p>
-
-          <div class="mb-8">
-            <div class="flex items-end gap-4">
-              <span v-if="product.discount_price" class="text-2xl line-through text-gray-500">
-                ${{ product.price.toFixed(2) }}
-              </span>
-              <span class="text-4xl font-bold text-pink-600">
-                ${{ discountPrice }}
-              </span>
-              <span v-if="discountPercentage > 0" class="ml-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                -{{ discountPercentage }}%
+            </div>
+            
+            <h1 class="font-serif text-6xl text-stone-900 leading-[1.1] mb-6 tracking-tight">
+              {{ product.name }}
+            </h1>
+            
+            <div class="flex items-baseline gap-4 mb-8">
+              <span class="text-4xl font-light text-stone-900 tracking-tighter">${{ selectedPrice.toFixed(2) }}</span>
+              <span v-if="originalPrice > selectedPrice" class="text-xl text-stone-300 line-through decoration-stone-200">
+                ${{ originalPrice.toFixed(2) }}
               </span>
             </div>
-          </div>
 
-          <div class="mb-8">
-            <span class="text-lg font-medium">Availability:</span>
-            <span class="ml-3 text-lg" :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-              {{ product.stock > 0 ? `${product.stock} Units in Stock` : 'Out of Stock' }}
-            </span>
-          </div>
+            <p class="text-stone-500 leading-relaxed font-light mb-12 text-lg italic border-l-2 border-amber-100 pl-6">
+              {{ product.description || 'A curated selection crafted with the finest ingredients for an unforgettable experience.' }}
+            </p>
 
-          <div class="mt-8">
-            <!-- Quantity input - only show when in stock -->
-            <div v-if="product.stock > 0" class="flex items-center gap-4 mb-6">
-              <label class="font-medium text-lg">Quantity:</label>
-              <input 
-                v-model.number="quantity"
-                type="number" 
-                min="1" 
-                :max="product.stock"
-                class="w-28 border border-gray-300 rounded-lg px-4 py-3 text-center text-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-              />
-            </div>
+            <div class="space-y-12">
+              <div v-if="product.variants?.length > 0">
+                <span class="block text-[11px] uppercase tracking-[0.15em] font-bold text-stone-400 mb-5">Select Experience Size</span>
+                <div class="flex flex-wrap gap-4">
+                  <button
+                    v-for="variant in product.variants" :key="variant.size"
+                    @click="selectVariant(variant)"
+                    :disabled="variant.stock !== undefined && variant.stock <= 0"
+                    class="relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all border transition-all duration-300"
+                    :class="{
+                      'bg-stone-900 text-white border-stone-900 scale-110 shadow-lg': selectedVariant?.size === variant.size,
+                      'bg-transparent border-stone-200 text-stone-600 hover:border-stone-400': selectedVariant?.size !== variant.size,
+                      'opacity-30 cursor-not-allowed': variant.stock !== undefined && variant.stock <= 0
+                    }"
+                  >
+                    {{ variant.size.charAt(0).toUpperCase() }}
+                  </button>
+                </div>
+              </div>
 
-            <!-- Add to Cart Button or Out of Stock Message -->
-            <button 
-              v-if="product.stock > 0"
-              @click="addToCart"
-              :disabled="adding || quantity < 1 || quantity > product.stock"
-              class="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-4 rounded-lg font-bold text-xl transition flex items-center justify-center gap-3"
-            >
-              <span v-if="adding">Adding...</span>
-              <span v-else>Add to Cart</span>
-            </button>
+              <div v-if="product.sugar_level !== null" class="space-y-8">
+                <div class="flex justify-between items-center">
+                  <span class="text-[11px] uppercase tracking-[0.15em] font-bold text-stone-400">Sweetness Profile</span>
+                </div>
+                <div class="bg-stone-50/50 p-8 rounded-[2.5rem] border border-stone-100">
+                   <div class="flex justify-between items-center mb-6">
+                    <span class="font-serif text-2xl italic text-amber-800">{{ customSugarLevel }}%</span>
+                  </div>
+                  <input 
+                    v-model.number="customSugarLevel"
+                    type="range" min="0" max="100" step="25"
+                    class="w-full h-[2px] bg-stone-200 appearance-none cursor-pointer accent-stone-900"
+                  />
+                  <div class="flex justify-between mt-4 text-[9px] uppercase tracking-widest text-stone-400 font-bold">
+                    <span>Zero</span>
+                    <span>Balanced</span>
+                    <span>Full Sweet</span>
+                  </div>
+                </div>
+              </div>
 
-            <div v-else class="w-full bg-gray-300 text-gray-700 py-4 rounded-lg font-bold text-xl text-center">
-              Out of Stock
+              <div v-if="availableStock > 0" class="space-y-6 pt-4">
+                <div class="flex items-center gap-4">
+                  <div class="flex items-center bg-white border border-stone-200 rounded-2xl p-1 shadow-sm">
+                    <button @click="quantity > 1 ? quantity-- : null" class="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-stone-900 transition-colors text-xl">−</button>
+                    <input v-model.number="quantity" readonly class="w-10 text-center font-bold text-stone-900 bg-transparent focus:outline-none" />
+                    <button @click="quantity < maxQuantity ? quantity++ : null" class="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-stone-900 transition-colors text-xl">+</button>
+                  </div>
+
+                  <button 
+                    @click="addToCart"
+                    :disabled="adding || !canAddToCart"
+                    class="flex-1 bg-[#2C1810] hover:bg-[#3F2A21] disabled:bg-stone-200 text-white h-14 rounded-2xl font-bold uppercase text-[10px] tracking-[0.25em] transition-all shadow-xl active:scale-[0.98] flex items-center justify-center gap-3"
+                  >
+                    <span v-if="!adding">Reserve for Cart</span>
+                    <span v-else class="flex items-center gap-2">
+                      <div class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </span>
+                  </button>
+                </div>
+                
+                <p class="text-center text-[10px] uppercase tracking-[0.2em] font-bold" :class="availableStock < 5 ? 'text-rose-600' : 'text-stone-400'">
+                  {{ availableStockMessage }}
+                </p>
+              </div>
+
+              <div v-else class="p-8 rounded-2xl bg-stone-100 text-stone-400 text-center font-bold uppercase text-[10px] tracking-widest border border-dashed border-stone-200">
+                Currently Unavailable
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else class="text-center py-20">
-        <h3 class="text-2xl font-bold text-gray-400">Product not found</h3>
+      <div v-else class="text-center py-32">
+        <h3 class="font-serif text-4xl text-stone-900 mb-6">Discovery Unsuccessful</h3>
+        <router-link :to="{ name: 'Products' }" class="text-amber-700 font-bold uppercase text-[10px] tracking-[0.3em] hover:text-amber-900">Return to Gallery</router-link>
       </div>
     </div>
   </div>
@@ -113,6 +167,8 @@ const selectedImage = ref<string>('')
 const loading = ref(true)
 const adding = ref(false)
 const quantity = ref(1)
+const customSugarLevel = ref(50)
+const selectedVariant = ref<any>(null)
 
 onMounted(async () => {
   loading.value = true
@@ -120,68 +176,121 @@ onMounted(async () => {
     const slug = route.params.slug as string
     product.value = await productService.getProductBySlug(slug)
     
-    if (product.value.primary_image) {
-      selectedImage.value = product.value.primary_image
-    } else if (product.value.image_urls && product.value.image_urls.length > 0) {
-      selectedImage.value = product.value.image_urls[0]
-    } else {
-      selectedImage.value = '/images/placeholder.jpg'
+    selectedImage.value = product.value.primary_image 
+      || (product.value.image_urls?.[0]) 
+      || '/images/placeholder.jpg'
+
+    if (product.value.variants?.length > 0) {
+      // Logic Update: Try to default to 'M' (Medium) if it exists, otherwise find first available
+      const mediumVariant = product.value.variants.find((v: any) => 
+        v.size.toLowerCase() === 'm' || v.size.toLowerCase() === 'medium'
+      )
+      
+      if (mediumVariant && (!mediumVariant.stock || mediumVariant.stock > 0)) {
+        selectedVariant.value = mediumVariant
+      } else {
+        const firstAvailable = product.value.variants.find((v: any) => !v.stock || v.stock > 0)
+        selectedVariant.value = firstAvailable || product.value.variants[0]
+      }
     }
   } catch (error: any) {
     console.error('Error loading product:', error)
-    alert(error.response?.data?.message || 'Product not found')
     router.push({ name: 'Products' })
   } finally {
     loading.value = false
   }
 })
 
-const discountPrice = computed(() => {
-  if (!product.value) return '0.00'
-  return (product.value.discount_price || product.value.price).toFixed(2)
+const selectedPrice = computed(() => {
+  if (selectedVariant.value?.price != null) return Number(selectedVariant.value.price)
+  return Number(product.value?.discount_price ?? product.value?.price ?? 0)
+})
+
+const originalPrice = computed(() => {
+  return Number(selectedVariant.value?.original_price ?? product.value?.price ?? 0)
 })
 
 const discountPercentage = computed(() => {
-  if (!product.value || !product.value.discount_price) return 0
-  const discount = ((product.value.price - product.value.discount_price) / product.value.price) * 100
-  return Math.round(discount)
+  if (originalPrice.value <= 0) return 0
+  const diff = originalPrice.value - selectedPrice.value
+  return diff > 0 ? Math.round((diff / originalPrice.value) * 100) : 0
 })
 
-const handleImageError = (e: Event) => {
-  (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+const availableStock = computed(() => {
+  if (selectedVariant.value?.stock != null) return selectedVariant.value.stock
+  return product.value?.stock ?? 0
+})
+
+const maxQuantity = computed(() => Math.max(availableStock.value, 1))
+
+const availableStockMessage = computed(() => {
+  if (availableStock.value === 0) return 'Fully Booked'
+  if (availableStock.value < 5) return `Only ${availableStock.value} remain`
+  return `${availableStock.value} Units Available`
+})
+
+const canAddToCart = computed(() => {
+  if (product.value?.variants?.length > 0) return !!selectedVariant.value && availableStock.value > 0
+  return availableStock.value > 0
+})
+
+const selectVariant = (variant: any) => {
+  if (variant.stock !== undefined && variant.stock <= 0) return
+  selectedVariant.value = variant
+  quantity.value = 1
 }
 
 const addToCart = async () => {
-  if (!product.value) return
-
+  if (!product.value || !canAddToCart.value) return
   const token = localStorage.getItem('token')
-  if (!token) {
-    alert('Please login first!')
-    router.push({ name: 'Login' })
-    return
-  }
-
-  if (quantity.value > product.value.stock) {
-    alert(`Only ${product.value.stock} items available`)
-    quantity.value = product.value.stock
-    return
-  }
+  if (!token) { router.push({ name: 'Login' }); return }
 
   adding.value = true
   try {
-    await cartService.addItem(product.value.id, quantity.value)
-    alert(`Added ${quantity.value} × ${product.value.name} to cart successfully!`)
+    const sugar = product.value.sugar_level !== null ? customSugarLevel.value : null
+    const variantData = product.value.variants?.length > 0 && selectedVariant.value ? {
+      size: selectedVariant.value.size,
+      price: selectedVariant.value.price,
+      variant_index: product.value.variants.indexOf(selectedVariant.value)
+    } : undefined
+
+    await cartService.addItem(product.value.id, quantity.value, sugar, variantData)
+    localStorage.setItem('cartUpdated', Date.now().toString())
     quantity.value = 1
   } catch (error: any) {
-    let msg = 'Ohh so sorry, This product has been no stock now🙏❤️'
-    if (error.response?.data?.message) {
-      msg = error.response.data.message  // This will show "Only X more can be added..." etc.
-    } else if (error.response?.data?.errors) {
-      msg = Object.values(error.response.data.errors).flat().join(', ')
-    }
-    alert(msg)
+    alert(error.response?.data?.message || 'Something went wrong')
   } finally {
     adding.value = false
   }
 }
+
+const handleImageError = (e: Event) => {
+  (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+}
 </script>
+
+<style scoped>
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+/* Custom Range Styling */
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: #2c1810;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+</style>

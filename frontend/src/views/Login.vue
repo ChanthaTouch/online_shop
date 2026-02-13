@@ -1,57 +1,61 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center py-12 px-4">
-    <div class="max-w-md w-full">
-      <!-- Header -->
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-black text-white tracking-wider">NAK NAK</h1>
-        <p class="text-pink-100 text-sm font-bold">STORE</p>
+  <div class="min-h-screen bg-[#faf9f6] text-[#2c1810] flex items-center justify-center py-16 px-4">
+    <div class="w-full max-w-md">
+      <!-- Brand Header -->
+      <div class="text-center mb-16">
+        <h1 class="font-serif text-6xl md:text-7xl text-stone-900 mb-4 tracking-tight">Life & Coffee</h1>
+        <p class="text-amber-700 text-sm font-black uppercase tracking-[0.4em]">Welcome Back</p>
+        <div class="w-24 h-[1px] bg-amber-500/30 mx-auto mt-6"></div>
       </div>
 
       <!-- Login Card -->
-      <div class="bg-white rounded-lg shadow-2xl p-8">
-        <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+      <div class="bg-white/70 backdrop-blur-2xl rounded-[3rem] shadow-2xl p-10 md:p-12 border border-white/50">
+        <h2 class="font-serif text-4xl text-stone-900 mb-10 text-center tracking-wide">Sign In</h2>
 
-        <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+        <div v-if="errorMessage" class="mb-8 p-5 bg-rose-50/80 text-rose-700 rounded-3xl text-sm border border-rose-200 backdrop-blur-sm">
           {{ errorMessage }}
         </div>
 
-        <form @submit.prevent="handleLogin" class="space-y-4">
+        <form @submit.prevent="handleLogin" class="space-y-8">
           <div>
-            <label class="block text-sm font-semibold mb-2">Email</label>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-3">Email Address</label>
             <input 
               v-model="form.email"
               type="email"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-500"
               required
+              class="w-full px-8 py-5 bg-[#f5f4f0]/50 border border-stone-200 rounded-3xl focus:ring-4 focus:ring-amber-500/30 outline-none text-lg font-light placeholder:text-stone-400 transition-all"
+              placeholder="your@email.com"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-semibold mb-2">Password</label>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-3">Password</label>
             <input 
               v-model="form.password"
               type="password"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-500"
               required
+              class="w-full px-8 py-5 bg-[#f5f4f0]/50 border border-stone-200 rounded-3xl focus:ring-4 focus:ring-amber-500/30 outline-none text-lg font-light placeholder:text-stone-400 transition-all"
+              placeholder="••••••••"
             />
           </div>
 
           <button 
             type="submit"
             :disabled="isLoading"
-            class="w-full px-4 py-3 bg-pink-500 text-white rounded-lg font-bold hover:bg-pink-600 disabled:bg-gray-400 transition"
+            class="w-full bg-amber-600 text-white py-6 rounded-3xl font-serif text-2xl font-medium hover:bg-amber-700 transition-all disabled:bg-stone-400 flex justify-center items-center gap-4 shadow-xl mt-10"
           >
-            {{ isLoading ? 'Logging in...' : 'Login' }}
+            <span v-if="isLoading" class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></span>
+            {{ isLoading ? 'Signing in...' : 'Sign In' }}
           </button>
         </form>
 
-        <div class="mt-6 text-center">
-          <p class="text-gray-600">Don't have an account?</p>
+        <div class="mt-10 text-center">
+          <p class="text-stone-600 text-sm">Don't have an account yet?</p>
           <router-link 
             to="/register"
-            class="text-pink-500 font-bold hover:underline"
+            class="text-amber-700 font-serif text-lg hover:text-amber-600 transition"
           >
-            Register here
+            Create Account
           </router-link>
         </div>
       </div>
@@ -60,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+// Script unchanged – only visual enhancements
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { authService } from '@/services/auth'

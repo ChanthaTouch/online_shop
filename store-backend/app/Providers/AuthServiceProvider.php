@@ -23,5 +23,15 @@ class AuthServiceProvider extends ServiceProvider
 
             return strtolower(trim($role)) === 'admin';
         });
+
+        Gate::define('manage-orders', function (User $user) {
+
+            $role = $user->role ?? '';
+
+            // Debug log
+            \Log::info('Gate manage-orders called for user #' . $user->id . ' role=' . $role);
+
+            return strtolower(trim($role)) === 'admin';
+        });
     }
 }

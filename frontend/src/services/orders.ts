@@ -42,6 +42,13 @@ export interface OrderResponse {
   total: number;
 }
 
+export interface CheckoutResponse {
+  message: string;
+  order: Order;
+  points_earned?: number;
+  total_points?: number;
+}
+
 export const orderService = {
   async getOrders(page = 1): Promise<OrderResponse> {
     const response = await api.get("/orders", {
@@ -59,7 +66,7 @@ export const orderService = {
     shippingAddress: Record<string, any>,
     paymentMethod: string,
     discountCode?: string // Optional – only sent if provided
-  ): Promise<{ message: string; order: Order }> {
+  ): Promise<CheckoutResponse> {
     const payload: any = {
       shipping_address: shippingAddress,
       payment_method: paymentMethod,

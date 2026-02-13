@@ -18,18 +18,16 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
-
             $table->decimal('price', 10, 2);
             $table->unsignedInteger('stock');
-
+            $table->unsignedInteger('sugar_level')->default(100)->comment('0-100 percenttage');
+            $table->json('variants')->nullable();
             $table->json('images')->nullable();
-
-            // ✅ discount fields (NO ->after())
+           
             $table->decimal('discount_price', 10, 2)->nullable();
             $table->decimal('discount_percentage', 5, 2)->nullable();
             $table->timestamp('discount_starts_at')->nullable();
             $table->timestamp('discount_ends_at')->nullable();
-
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();

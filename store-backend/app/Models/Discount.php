@@ -11,6 +11,9 @@ class Discount extends Model
      */
     protected $fillable = [
         'code',
+        'title',
+        'description',
+        'link',
         'type',
         'value',
         'min_order_amount',

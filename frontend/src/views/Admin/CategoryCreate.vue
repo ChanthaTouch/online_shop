@@ -1,63 +1,85 @@
 <!-- src/views/admin/CategoryCreate.vue -->
 <template>
-  <div class="bg-gray-50">
-    <div class="container mx-auto px-4 max-w-2xl py-8">
-      <div class="mb-8">
-        <h1 class="text-4xl font-black text-gray-800 mb-2">Admin Dashboard</h1>
-        <p class="text-gray-600">Create a new product category</p>
+  <div class="min-h-screen bg-[#faf9f6] text-[#2c1810] pb-20">
+    <!-- Hero Header -->
+    <div class="bg-[#1a120b] py-24 px-4 relative overflow-hidden">
+      <div class="absolute inset-0 opacity-10">
+        <svg width="100%" height="100%">
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.5"/>
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#grid)" />
+        </svg>
       </div>
+      <div class="container mx-auto text-center relative z-10">
+        <span class="text-amber-500 text-[10px] font-black uppercase tracking-[0.5em] block mb-4">
+          Admin Dashboard
+        </span>
+        <h1 class="font-serif text-6xl md:text-8xl text-white mb-6">Create Category</h1>
+        <div class="w-24 h-[1px] bg-amber-500/50 mx-auto"></div>
+        <p class="mt-8 text-white/80 text-lg font-light">Add a new category to organize your collection</p>
+      </div>
+    </div>
 
-      <div class="bg-white rounded-xl shadow-sm p-8">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-          <!-- Name -->
+    <div class="container mx-auto px-6 -mt-20 relative z-20 max-w-3xl">
+      <!-- Form Card -->
+      <div class="bg-white/70 backdrop-blur-2xl rounded-[3rem] shadow-2xl border border-white/50 p-10 md:p-16">
+        <form @submit.prevent="handleSubmit" class="space-y-12">
+          <!-- Category Name -->
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">
-              Category Name <span class="text-red-500">*</span>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-4">
+              Category Name <span class="text-red-600">*</span>
             </label>
             <input
               v-model="form.name"
               type="text"
               required
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
-              placeholder="e.g. Electronics, Fashion, Home & Kitchen"
+              class="w-full px-8 py-6 bg-[#f5f4f0]/50 border border-stone-200 rounded-3xl focus:ring-4 focus:ring-amber-500/30 outline-none text-lg font-light transition-all"
+              placeholder="e.g. Single Origin, Blends, Equipment"
             />
           </div>
 
           <!-- Slug -->
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">Slug (optional)</label>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-4">
+              Slug (optional)
+            </label>
             <input
               v-model="form.slug"
               type="text"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
-              placeholder="auto-generated-if-empty (e.g. electronics)"
+              class="w-full px-8 py-6 bg-[#f5f4f0]/50 border border-stone-200 rounded-3xl focus:ring-4 focus:ring-amber-500/30 outline-none text-lg font-light transition-all"
+              placeholder="auto-generated-if-empty (e.g. single-origin)"
             />
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-3 text-sm text-stone-600">
               Used in URLs. Leave empty to auto-generate from name.
             </p>
           </div>
 
           <!-- Description -->
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">Description (optional)</label>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-4">
+              Description (optional)
+            </label>
             <textarea
               v-model="form.description"
-              rows="4"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition"
+              rows="5"
+              class="w-full px-8 py-6 bg-[#f5f4f0]/50 border border-stone-200 rounded-3xl focus:ring-4 focus:ring-amber-500/30 outline-none text-lg font-light resize-none transition-all"
               placeholder="Short description of this category..."
             ></textarea>
           </div>
 
           <!-- Image Upload -->
           <div>
-            <label class="block text-sm font-bold text-gray-700 mb-2">Category Image (optional)</label>
+            <label class="block text-xs font-black uppercase tracking-[0.3em] text-amber-700 mb-4">
+              Category Image (optional)
+            </label>
             <div
-              class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-pink-500 transition-colors cursor-pointer"
+              class="flex justify-center px-10 pt-12 pb-14 border-2 border-dashed border-stone-300 rounded-3xl hover:border-amber-500 transition-colors bg-[#f5f4f0]/30 cursor-pointer"
               @dragover.prevent
               @drop.prevent="handleDrop"
             >
-              <div class="space-y-1 text-center">
-                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+              <div class="space-y-6 text-center">
+                <svg class="mx-auto h-16 w-16 text-stone-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                   <path
                     d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
                     stroke-width="2"
@@ -66,8 +88,8 @@
                   />
                 </svg>
 
-                <div class="flex text-sm text-gray-600">
-                  <label class="relative cursor-pointer bg-white rounded-md font-medium text-pink-600 hover:text-pink-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-pink-500">
+                <div class="flex text-lg text-stone-600 justify-center">
+                  <label class="relative cursor-pointer rounded-md font-medium text-amber-600 hover:text-amber-500">
                     <span>Upload a file</span>
                     <input
                       type="file"
@@ -76,12 +98,12 @@
                       @change="handleFileChange"
                     />
                   </label>
-                  <p class="pl-1">or drag and drop</p>
+                  <p class="pl-2">or drag and drop</p>
                 </div>
 
-                <p class="text-xs text-gray-500">PNG, JPG, GIF, WEBP up to 2MB</p>
+                <p class="text-xs text-stone-500">PNG, JPG, GIF, WEBP up to 2MB</p>
 
-                <p v-if="fileName" class="text-sm font-medium text-pink-600 mt-2">
+                <p v-if="fileName" class="text-lg font-serif font-bold text-amber-700 mt-4">
                   Selected: {{ fileName }}
                 </p>
 
@@ -89,23 +111,21 @@
                   v-if="imagePreview"
                   :src="imagePreview"
                   alt="Category preview"
-                  class="mt-4 max-h-48 mx-auto rounded shadow object-contain"
+                  class="mt-6 max-h-64 mx-auto rounded-2xl shadow-xl object-cover border border-stone-200"
                 />
               </div>
             </div>
           </div>
 
           <!-- Submit Button -->
-          <div>
-            <button
-              type="submit"
-              :disabled="isLoading"
-              class="w-full flex justify-center items-center gap-2 py-4 px-6 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span v-if="isLoading" class="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></span>
-              {{ isLoading ? 'Creating Category...' : 'Create Category' }}
-            </button>
-          </div>
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full bg-amber-600 text-white py-6 rounded-3xl font-serif text-2xl font-medium hover:bg-amber-700 transition-all disabled:bg-stone-400 flex justify-center items-center gap-4 shadow-xl"
+          >
+            <span v-if="isLoading" class="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></span>
+            {{ isLoading ? 'Creating Category...' : 'Create Category' }}
+          </button>
         </form>
       </div>
     </div>
@@ -113,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+// Script remains unchanged – only visual redesign applied
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { categoryService } from '@/services/categorie'   // ← make sure path & name correct
@@ -129,7 +150,6 @@ const form = ref({
   name: '',
   slug: '',
   description: '',
-  // removed is_active from form → handled as '1' by default
 })
 
 onMounted(() => {
@@ -195,7 +215,6 @@ const handleSubmit = async () => {
       formData.append('description', form.value.description.trim())
     }
 
-    // Most common default in Laravel: active = 1
     formData.append('is_active', '1')
 
     if (selectedFile.value) {
@@ -217,7 +236,6 @@ const handleSubmit = async () => {
     let message = 'Failed to create category. Please try again.'
 
     if (error.response?.data?.errors) {
-      // Show first validation error
       const errors = error.response.data.errors
       const firstKey = Object.keys(errors)[0]
       message = errors[firstKey][0] || message

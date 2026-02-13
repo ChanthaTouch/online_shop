@@ -5,6 +5,7 @@ export interface CartItem {
   id: number;
   product_id: number;
   quantity: number;
+  sugar_level?: number | null;
   product?: {
     id: number;
     name: string;
@@ -61,12 +62,18 @@ export const cartService = {
     }
   },
 
-  async addItem(productId: number, quantity: number = 1): Promise<CartResponse> {
+  async addItem(productId: number, quantity: number = 1, sugarLevel?: number | null): Promise<CartResponse> {
     try {
-      const response = await api.post('/cart/items', {
+      const payload: any = {
         product_id: productId,
         quantity,
-      });
+      };
+      
+      if (sugarLevel !== undefined && sugarLevel !== null) {
+        payload.sugar_level = sugarLevel;
+      }
+      
+      const response = await api.post('/cart/items', payload);
       return normalizeCartImages(response.data);
     } catch (error: any) {
       console.error('Add to cart failed:', error);

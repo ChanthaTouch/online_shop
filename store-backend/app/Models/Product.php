@@ -18,16 +18,19 @@ class Product extends Model
         'description',
         'price',
         'stock',
+        'sugar_level',
         'images',
         'discount_price',
         'discount_percentage',
         'discount_starts_at',
         'discount_ends_at',
         'is_active',
+        'variants'
     ];
 
     protected $casts = [
         'images' => 'array',
+        'variants' => 'array',
         'is_active' => 'boolean',
 
         'price' => 'decimal:2',

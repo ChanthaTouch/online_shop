@@ -26,6 +26,7 @@ class CartController extends Controller
                     'id'          => $item->id,
                     'product_id'  => $item->product_id,
                     'quantity'    => $item->quantity,
+                    'sugar_level' => $item->sugar_level ?? null,
                     'product'     => $product ? [
                         'id'              => $product->id,
                         'name'            => $product->name,
@@ -62,6 +63,7 @@ class CartController extends Controller
         $request->validate([
             'product_id' => 'required|integer|exists:products,id',
             'quantity'   => 'required|integer|min:1',
+            'sugar_level' => 'nullable|integer|min:0|max:100',
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -87,7 +89,16 @@ class CartController extends Controller
             'product_id' => $product->id,
         ]);
 
+        $price = $product->discount_price ?? $product->price;
         $cartItem->quantity = ($cartItem->exists ? $cartItem->quantity : 0) + $request->quantity;
+        $cartItem->price = $price * $request->quantity;
+        $cartItem->unit_price = $price;
+        
+        // Set sugar_level if provided
+        if ($request->has('sugar_level')) {
+            $cartItem->sugar_level = $request->sugar_level;
+        }
+        
         $cartItem->save();
 
         return $this->index();

@@ -25,6 +25,12 @@ class User extends Authenticatable
     public function orders() {
         return $this->hasMany(Order::class);
     }
+    public function points() {
+        return $this->hasOne(\App\Models\CustomerPoints::class);
+    }
+    public function pointsTransactions() {
+        return $this->hasMany(\App\Models\PointsTransaction::class);
+    }
     public function isAdmin(): bool {
         return $this->role === 'admin';
        

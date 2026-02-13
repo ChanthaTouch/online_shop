@@ -19,6 +19,22 @@ class RestaurantController extends Controller
         return response()->json($data);
     }
 
+    public function show($id)
+    {
+        // Return a single restaurant by ID
+        $restaurants = [
+            1 => ['id' => 1, 'name' => 'Corner Pizza', 'cuisine' => 'Italian', 'rating' => 4.5],
+            2 => ['id' => 2, 'name' => 'Sushi Express', 'cuisine' => 'Japanese', 'rating' => 4.7],
+            3 => ['id' => 3, 'name' => 'Veggie Delight', 'cuisine' => 'Vegetarian', 'rating' => 4.3],
+        ];
+
+        if (isset($restaurants[$id])) {
+            return response()->json($restaurants[$id]);
+        }
+
+        return response()->json(['error' => 'Restaurant not found'], 404);
+    }
+
     public function menu($id)
     {
         // Simple static menus keyed by restaurant id
