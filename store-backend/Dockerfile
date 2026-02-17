@@ -13,7 +13,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 # Copy backend only
-COPY store-backend /app
+COPY . /app
 
 RUN composer install --no-dev --optimize-autoloader
 
