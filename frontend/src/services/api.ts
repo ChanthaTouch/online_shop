@@ -3,10 +3,11 @@ import axios, { AxiosHeaders } from "axios";
 import router from '@/router'
 
 const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api",
+  // ✅ FIXED: Use environment variable (Vite) with fallback for local dev
+  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+
   headers: {
     Accept: "application/json",
-   
   },
 });
 
@@ -24,12 +25,8 @@ api.interceptors.request.use((config) => {
       };
     }
   }
-  
-  /**
-   * IMPORTANT:
-   * If sending FormData, let the browser set Content-Type
-   * (multipart/form-data with boundary)
-   */
+
+  // Let browser handle Content-Type for FormData
   if (config.data instanceof FormData) {
     if (config.headers instanceof AxiosHeaders) {
       config.headers.delete("Content-Type");
@@ -46,29 +43,25 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const reqUrl = (error.config && (error.config.url || '')) as string
+      const reqUrl = (error.config && (error.config.url || '')) as string;
 
-      // Don't redirect to login for public read endpoints (Home data)
-      const isPublicRead = /\/(categories|products)([\/\?]|$)/i.test(reqUrl)
+      // Don't redirect for public endpoints
+      const isPublicRead = /\/(categories|products)([\/\?]|$)/i.test(reqUrl);
 
-      console.warn('Session expired — please login again')
-      localStorage.removeItem('token')
+      console.warn('Session expired — please login again');
+      localStorage.removeItem('token');
 
       if (isPublicRead) {
-        // Allow the component to handle the 401 (show placeholder UI)
-        console.info('Public endpoint returned 401 — skipping login redirect')
-        return Promise.reject(error)
+        return Promise.reject(error);
       }
 
-      // Use the router for SPA navigation and preserve the attempted path
       try {
-        const currentPath = window.location.pathname + window.location.search
+        const currentPath = window.location.pathname + window.location.search;
         if (router.currentRoute.value.name !== 'Login') {
-          router.push({ name: 'Login', query: { redirect: currentPath } })
+          router.push({ name: 'Login', query: { redirect: currentPath } });
         }
       } catch (err) {
-        // Fallback to full reload if router isn't available for any reason
-        window.location.href = '/login'
+        window.location.href = '/login';
       }
     }
 
