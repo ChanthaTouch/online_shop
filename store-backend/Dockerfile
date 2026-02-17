@@ -1,24 +1,25 @@
-FROM php:8.2-cli
+FROM php:8.2-apache-alpine
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev zip
+RUN apk add --no-cache \
+    git unzip curl zip libzip-dev oniguruma-dev \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql zip gd mbstring exif pcntl bcmath \
+    && apk del --no-cache $PHPIZE_DEPS
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_mysql zip
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
 
-WORKDIR /app
+COPY . .
 
-# Copy all files from current context (/store-backend) to /app in container
-COPY . /app
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 storage bootstrap/cache
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-EXPOSE 8080
+RUN a2enmod rewrite
 
-# Run migrations (force in prod) then start PHP server
-# Use $PORT for Railway compatibility (falls back to 8080)
-CMD php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public
+EXPOSE 80
+
+CMD ["apache2-foreground"]
