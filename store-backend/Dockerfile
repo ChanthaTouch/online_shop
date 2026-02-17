@@ -12,11 +12,13 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Copy backend only
+# Copy all files from current context (/store-backend) to /app in container
 COPY . /app
 
 RUN composer install --no-dev --optimize-autoloader
 
 EXPOSE 8080
 
-CMD php artisan migrate --force && php -S 0.0.0.0:8080 -t public
+# Run migrations (force in prod) then start PHP server
+# Use $PORT for Railway compatibility (falls back to 8080)
+CMD php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public
