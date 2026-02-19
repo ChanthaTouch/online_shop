@@ -230,6 +230,7 @@ import { useRouter } from 'vue-router'
 import { authService } from '@/services/auth'
 import { pointsService } from '@/services/points'
 
+
 const router = useRouter()
 const user = ref<any>(null)
 const loading = ref(false)

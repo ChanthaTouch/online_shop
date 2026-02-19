@@ -35,7 +35,7 @@
             <div class="flex flex-col md:flex-row gap-8">
               <div class="relative w-full md:w-44 aspect-square rounded-[2rem] overflow-hidden bg-stone-50 flex-shrink-0">
                 <img
-                  :src="item.product?.primary_image || item.product?.images?.[0] || '/images/placeholder.jpg'"
+                  :src="item.product?.primary_image || item.product?.images?.[0] || '/images/placeholder.svg'"
                   class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   @error="handleImageError"
                 />
@@ -200,7 +200,7 @@ const removeItem = async (itemId) => {
 }
 
 const handleImageError = (e) => {
-  e.target.src = '/images/placeholder.jpg'
+  e.target.src = '/images/placeholder.svg'
 }
 
 onMounted(() => {

@@ -178,7 +178,8 @@ onMounted(async () => {
     
     selectedImage.value = product.value.primary_image 
       || (product.value.image_urls?.[0]) 
-      || '/images/placeholder.jpg'
+      || product.value.display_image
+      || '/images/placeholder.svg'
 
     if (product.value.variants?.length > 0) {
       // Logic Update: Try to default to 'M' (Medium) if it exists, otherwise find first available
@@ -265,7 +266,7 @@ const addToCart = async () => {
 }
 
 const handleImageError = (e: Event) => {
-  (e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+  (e.target as HTMLImageElement).src = '/images/placeholder.svg'
 }
 </script>
 

@@ -26,25 +26,31 @@ export interface CartResponse {
   total_items: number;
 }
 
+import { getStorageBase } from '@/utils/image';
+
 // Helper – converts relative storage paths → full URLs
 function normalizeImagePath(path?: string | null): string | null {
   if (!path) return null;
   if (path.startsWith('http') || path.startsWith('//')) return path;
 
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  // Use the same base as api (remove /api suffix if present)
-  const base = api.defaults.baseURL?.replace(/\/api\/?$/, '') || 'http://127.0.0.1:8000';
+  const cleanPath = path.replace(/^\/?public\//, '').replace(/^\/?storage\//, '').replace(/^\//, '');
+  const base = getStorageBase();
+  if (!base) return `/storage/${cleanPath}`;
   return `${base}/storage/${cleanPath}`;
 }
 
 function normalizeCartImages(cart: CartResponse): CartResponse {
   cart.items = cart.items.map((item) => {
     if (item.product) {
-      item.product.images = (item.product.images || [])
+      const rawImages = item.product.images || [];
+      item.product.images = rawImages
         .map(normalizeImagePath)
         .filter((p): p is string => !!p);
 
-      item.product.primary_image = normalizeImagePath(item.product.primary_image);
+      item.product.primary_image =
+        normalizeImagePath(item.product.primary_image) ||
+        item.product.images[0] ||
+        null;
     }
     return item;
   });
@@ -90,7 +96,7 @@ export const cartService = {
     try {
       // Note: your original CartController uses PATCH or PUT?
       // Most REST APIs use PATCH for partial updates → try .patch first
-      const response = await api.patch(`/cart/items/${itemId}`, { quantity });
+      const response = await api.put(`/cart/items/${itemId}`, { quantity });
       // If your backend expects PUT instead → change to .put()
       return normalizeCartImages(response.data);
     } catch (error: any) {
@@ -111,10 +117,7 @@ export const cartService = {
 
   async clearCart(): Promise<{ success: boolean; message?: string }> {
     try {
-      // Your original controller has clear() but no dedicated route shown
-      // Adjust method & path to match your actual route
-      // Option A: DELETE /cart
-      const response = await api.delete('/cart');
+      const response = await api.post('/cart/clear');
       // Option B: if you have POST /cart/clear → use api.post('/cart/clear')
       return response.data;
     } catch (error: any) {

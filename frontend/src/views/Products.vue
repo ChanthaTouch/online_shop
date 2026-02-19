@@ -1,5 +1,7 @@
+<!-- src/views/Products.vue -->
 <template>
   <div class="min-h-screen bg-[#FDFCFB] text-[#2C1810] pb-32 selection:bg-amber-100">
+    <!-- Hero Header -->
     <div class="relative py-28 px-6 overflow-hidden bg-[#1a120b]">
       <div class="absolute inset-0 opacity-20 pointer-events-none">
         <svg width="100%" height="100%">
@@ -22,6 +24,7 @@
       </div>
     </div>
 
+    <!-- Filter & Search Bar -->
     <div class="container mx-auto px-6 -mt-10 relative z-30">
       <div class="bg-white/80 backdrop-blur-3xl rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-white/50 p-2 max-w-5xl mx-auto">
         <div class="flex flex-col md:flex-row items-center">
@@ -36,135 +39,133 @@
               type="text"
               placeholder="Find your flavor..."
               class="w-full pl-16 pr-6 py-6 bg-transparent border-none focus:ring-0 text-stone-800 placeholder:text-stone-300 font-light text-lg"
+              @keyup.enter="loadProducts"
             />
           </div>
 
           <div class="h-8 w-[1px] bg-stone-100 hidden md:block"></div>
 
-          <div class="relative min-w-[200px] w-full md:w-auto">
+          <div class="relative min-w-[200px] w-full md:w-auto mt-4 md:mt-0">
             <select
               v-model="selectedCategory"
-              class="w-full appearance-none px-10 py-6 bg-transparent border-none focus:ring-0 text-stone-500 cursor-pointer font-bold uppercase tracking-[0.2em] text-[10px]"
+              class="w-full md:w-48 px-6 py-6 bg-transparent border-none text-stone-800 font-light text-lg appearance-none focus:outline-none cursor-pointer"
+              @change="loadProducts"
             >
-              <option value="">All Experiences</option>
-              <option v-for="cat in categories" :key="cat.id" :value="cat.slug">{{ cat.name }}</option>
+              <option value="">All Origins</option>
+              <option v-for="cat in categories" :key="cat.id" :value="cat.slug">
+                {{ cat.name }}
+              </option>
             </select>
+            <span class="absolute right-6 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none">
+              ▼
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="container mx-auto px-6 mt-24">
-      <div v-if="loading" class="flex flex-col justify-center items-center py-40">
-        <div class="w-12 h-12 border-2 border-stone-100 border-t-amber-800 rounded-full animate-spin mb-6"></div>
-        <p class="text-stone-400 font-serif italic tracking-[0.2em] text-sm">Curating the gallery...</p>
+    <!-- Product Grid -->
+    <div class="container mx-auto px-6 py-16">
+      <div v-if="loading" class="flex justify-center items-center min-h-[60vh]">
+        <div class="w-16 h-16 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
 
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
-        <div
-          v-for="(product, index) in products"
-          :key="product.id"
-          class="group relative"
-          :style="{ transitionDelay: `${index * 50}ms` }"
-        >
-          <router-link
-            v-if="product.slug"
-            :to="{ name: 'ProductDetail', params: { slug: product.slug } }"
-            class="absolute inset-0 z-20"
-          ></router-link>
+      <div v-else-if="products.length === 0" class="text-center py-32">
+        <p class="text-2xl text-stone-500 italic font-light">
+          No products found matching your search...
+        </p>
+      </div>
 
-          <div
-            class="relative aspect-[3/4] mb-6 overflow-hidden rounded-[2.5rem] bg-stone-100 transition-all duration-700 group-hover:shadow-[0_40px_80px_-20px_rgba(44,24,16,0.15)] group-hover:-translate-y-2"
-          >
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-stone-100 hover:border-amber-200"
+        >
+          <div class="relative aspect-square overflow-hidden">
             <img
-              :src="product.display_image || '/images/placeholder.jpg'"
-              class="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110"
+              :src="product.display_image"
+              :alt="product.name"
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
               @error="handleImageError"
             />
-
-            <div class="absolute inset-0 bg-gradient-to-t from-[#2C1810]/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-            <div v-if="product.is_on_sale" class="absolute top-6 left-6 z-10">
-              <div
-                class="bg-rose-600 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2 transform group-hover:scale-110 transition-transform duration-500 animate-pulse-slow"
-              >
-                <span class="text-[11px] font-black uppercase tracking-[0.2em]">{{ product.discount_percentage }}% OFF</span>
-                <span class="text-sm">😊</span>
-              </div>
+            <div
+              v-if="product.is_on_sale"
+              class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md"
+            >
+              {{ product.discount_percentage || 'Sale' }}%
             </div>
+          </div>
 
-            <div class="absolute bottom-8 left-0 right-0 flex justify-center translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
-              <span class="px-8 py-3 bg-white text-[#2C1810] text-[10px] font-bold uppercase tracking-[0.2em] rounded-full shadow-2xl">
-                Explore Detail
+          <div class="p-6">
+            <h3 class="font-serif text-xl text-stone-900 mb-2 line-clamp-2">
+              {{ product.name }}
+            </h3>
+
+            <div class="flex items-baseline gap-3 mb-4">
+              <span class="text-2xl font-bold text-amber-800">
+                ${{ displayPrice(product).toFixed(2) }}
+              </span>
+              <span
+                v-if="product.discount_price && product.discount_price < product.price"
+                class="text-lg text-stone-400 line-through"
+              >
+                ${{ Number(product.price).toFixed(2) }}
               </span>
             </div>
 
-            <button
-              v-if="isAdmin && product.slug"
-              @click.prevent="goToEdit(product.slug)"
-              class="absolute top-6 right-6 z-30 w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-stone-800 shadow-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-amber-800 hover:text-white"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-          </div>
+            <div class="flex justify-between items-center">
+              <router-link
+                :to="`/products/${product.slug}`"
+                class="text-amber-700 hover:text-amber-900 font-medium transition-colors"
+              >
+                View Details →
+              </router-link>
 
-          <div class="px-2">
-            <div class="flex flex-col gap-1">
-              <div class="flex justify-between items-baseline">
-                <h3 class="font-serif text-2xl text-stone-900 group-hover:text-amber-800 transition-colors duration-300">
-                  {{ product.name }}
-                </h3>
-                <div class="text-right">
-                  <p class="font-light text-xl text-stone-900 tracking-tighter">
-                    ${{ displayPrice(product).toFixed(2) }}
-                  </p>
-                  <p v-if="product.is_on_sale" class="text-[10px] text-stone-300 line-through">
-                    ${{ (product.price || 0).toFixed(2) }}
-                  </p>
-                </div>
-              </div>
-              <div class="flex justify-between items-center mt-1">
-                <p class="text-[9px] text-stone-400 font-bold uppercase tracking-[0.3em]">
-                  {{ product.category?.name || 'Limited Edition' }}
-                </p>
-                <span v-if="product.has_variants" class="text-[9px] text-amber-700/50 font-bold uppercase tracking-widest">
-                  Multiple Sizes
-                </span>
-              </div>
+              <button
+                @click="addToCart(product)"
+                class="bg-amber-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors shadow-sm"
+                :disabled="product.stock === 0"
+              >
+                {{ product.stock === 0 ? 'Out of Stock' : 'Add to Cart' }}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-if="totalPages > 1" class="mt-32 flex justify-center items-center gap-12">
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="flex justify-center items-center gap-3 mt-16">
         <button
           @click="currentPage--"
-          :disabled="currentPage <= 1"
-          class="group flex items-center text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-all"
+          :disabled="currentPage === 1"
+          class="px-6 py-3 rounded-full bg-stone-100 text-stone-600 disabled:opacity-40 hover:bg-stone-200 transition-colors"
         >
-          <span class="mr-4 group-hover:-translate-x-2 transition-transform">← Previous</span>
+          Previous
         </button>
 
-        <div class="flex items-center gap-4">
-          <button
-            v-for="page in visiblePages"
-            :key="page"
-            @click="page !== '...' ? currentPage = page : null"
-            class="w-10 h-10 rounded-full text-[11px] font-bold transition-all"
-            :class="currentPage === page ? 'bg-[#2C1810] text-white shadow-xl scale-110' : 'text-stone-400 hover:text-stone-900'"
-          >
-            {{ page }}
-          </button>
-        </div>
+        <button
+          v-for="page in visiblePages"
+          :key="page"
+          @click="currentPage = typeof page === 'number' ? page : currentPage"
+          :class="[
+            'px-5 py-3 rounded-full transition-colors',
+            typeof page === 'number'
+              ? currentPage === page
+                ? 'bg-amber-600 text-white'
+                : 'bg-stone-100 text-stone-700 hover:bg-amber-100'
+              : 'text-stone-400 cursor-default'
+          ]"
+        >
+          {{ page }}
+        </button>
 
         <button
           @click="currentPage++"
-          :disabled="currentPage >= totalPages"
-          class="group flex items-center text-[10px] font-bold uppercase tracking-widest disabled:opacity-30 transition-all"
+          :disabled="currentPage === totalPages"
+          class="px-6 py-3 rounded-full bg-stone-100 text-stone-600 disabled:opacity-40 hover:bg-stone-200 transition-colors"
         >
-          <span class="ml-4 group-hover:translate-x-2 transition-transform text-amber-800">Next Page →</span>
+          Next
         </button>
       </div>
     </div>
@@ -172,82 +173,115 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { productService } from '@/services/products'
-import { authService } from '@/services/auth'
+import productService from '@/services/products'
+import categoryService from '@/services/categorie'
+import { cartService } from '@/services/cart' // assuming you have this
 
 const route = useRoute()
 const router = useRouter()
 
 const products = ref<any[]>([])
 const categories = ref<any[]>([])
-const loading = ref(true)
-const searchQuery = ref('')
-const selectedCategory = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
+const loading = ref(false)
+const searchQuery = ref('')
+const selectedCategory = ref('')
+const activeDiscount = ref<number | null>(null)
 const isMounted = ref(true)
 
-const isAdmin = computed(() => authService.isAuthenticated() && authService.isAdmin())
-
-const activeDiscount = computed(() => {
+const activeDiscountFromQuery = computed(() => {
   const discountQuery = route.query.discount
-  return discountQuery ? parseInt(discountQuery as string) : null
+  return discountQuery ? parseInt(discountQuery as string, 10) : null
 })
 
 const displayPrice = (product: any): number => {
-  if (product.has_variants && product.lowest_price !== undefined) return product.lowest_price
-  return product.final_price ?? product.price
+  if (!product) return 0
+  if (product.has_variants && product.lowest_price != null) {
+    return Number(product.lowest_price)
+  }
+  if (product.final_price != null) {
+    return Number(product.final_price)
+  }
+  return Number(product.price ?? 0)
 }
 
 const visiblePages = computed(() => {
   const delta = 2
-  const range = []
+  const range: (number | string)[] = []
   const start = Math.max(2, currentPage.value - delta)
   const end = Math.min(totalPages.value - 1, currentPage.value + delta)
+
   range.push(1)
   for (let i = start; i <= end; i++) range.push(i)
   if (end < totalPages.value - 1) range.push('...')
   if (totalPages.value > 1) range.push(totalPages.value)
+
   return range.filter((page, index, self) => self.indexOf(page) === index)
 })
 
-const goToEdit = (slug: string) => {
-  router.push({
-    name: 'ProductEdit',
-    params: { slug }
-  })
+const handleImageError = (e: Event) => {
+  ;(e.target as HTMLImageElement).src = '/images/placeholder.svg'
 }
 
 const loadProducts = async () => {
   if (!isMounted.value) return
+
   loading.value = true
   try {
     const response = await productService.getProducts(
       currentPage.value,
       selectedCategory.value || undefined,
-      searchQuery.value || undefined,
+      searchQuery.value.trim() || undefined,
       activeDiscount.value || undefined
     )
-    products.value = response.data
+
+    products.value = response.data || []
     totalPages.value = response.last_page || 1
+  } catch (err: any) {
+    console.error('Failed to load products:', err)
+    products.value = []
+    totalPages.value = 1
   } finally {
     loading.value = false
   }
 }
 
-const handleImageError = (e: Event) => {
-  ;(e.target as HTMLImageElement).src = '/images/placeholder.jpg'
+const addToCart = async (product: any) => {
+  if (!product.id || product.stock === 0) return
+
+  try {
+    await cartService.addItem(product.id, 1)
+    alert('Added to cart!') // replace with toast/notification in real app
+  } catch (err) {
+    console.error('Add to cart failed:', err)
+    alert('Failed to add to cart')
+  }
 }
 
-watch([activeDiscount, searchQuery, selectedCategory, currentPage], () => {
-  loadProducts()
-})
+watch(
+  [activeDiscount, searchQuery, selectedCategory, currentPage],
+  () => {
+    currentPage.value = 1 // reset to page 1 on filter change
+    loadProducts()
+  },
+  { deep: true }
+)
 
 onMounted(async () => {
-  categories.value = await productService.getCategories()
-  loadProducts()
+  activeDiscount.value = activeDiscountFromQuery.value
+
+  try {
+    categories.value = await categoryService.getCategories()
+    console.log('Categories loaded:', categories.value)
+  } catch (err) {
+    console.warn('Categories load failed:', err)
+    categories.value = []
+  }
+
+  await loadProducts()
 })
 
 onUnmounted(() => {
@@ -256,18 +290,5 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@keyframes pulse-slow {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.03);
-  }
-}
-.animate-pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
+/* Optional: Add any additional scoped styles here if needed */
 </style>

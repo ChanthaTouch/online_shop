@@ -17,6 +17,9 @@ RUN chown -R www-data:www-data . \
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
+# Create storage symlink so /storage URLs serve uploaded files
+RUN php artisan storage:link 2>/dev/null || true
+
 RUN a2enmod rewrite
 
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public

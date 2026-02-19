@@ -2,10 +2,14 @@
 import axios, { AxiosHeaders } from "axios";
 import router from '@/router'
 
-const api = axios.create({
-  // ✅ FIXED: Use environment variable (Vite) with fallback for local dev
-  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api",
+// Normalize base URL. For local dev: use /api so Vite proxy forwards to local backend.
+// For production: use VITE_API_URL (e.g. Railway). .env.local overrides .env.
+const rawBase = import.meta.env.VITE_API_URL ?? 
+  (import.meta.env.DEV ? '/api' : 'http://127.0.0.1:8000/api');
+const baseURL = rawBase.replace(/\/+$/, "").endsWith("/api") ? rawBase.replace(/\/+$/, "") : `${rawBase.replace(/\/+$/, "")}/api`;
 
+const api = axios.create({
+  baseURL,
   headers: {
     Accept: "application/json",
   },
@@ -19,10 +23,8 @@ api.interceptors.request.use((config) => {
     if (config.headers instanceof AxiosHeaders) {
       config.headers.set("Authorization", `Bearer ${token}`);
     } else {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
+      const headers = config.headers as Record<string, string>;
+      config.headers = { ...headers, Authorization: `Bearer ${token}` } as typeof config.headers;
     }
   }
 
@@ -45,7 +47,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const reqUrl = (error.config && (error.config.url || '')) as string;
 
-      // Don't redirect for public endpoints
+      // Don't treat login/register 401 as "session expired" — let the page show "Invalid credentials"
+      const isAuthAttempt = /\/login$|\/register$/i.test(reqUrl.replace(/\?.*$/, ''));
+      if (isAuthAttempt) {
+        return Promise.reject(error);
+      }
+
+      // Don't redirect for public read endpoints; just reject so UI can show data when available
       const isPublicRead = /\/(categories|products)([\/\?]|$)/i.test(reqUrl);
 
       console.warn('Session expired — please login again');

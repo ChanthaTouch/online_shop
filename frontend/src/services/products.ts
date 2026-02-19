@@ -1,182 +1,102 @@
 // src/services/products.ts
 import api from "./api";
-
-/* ---------------- TYPES ---------------- */
-
-export interface Variant {
-  size: string | null;
-  price: number;
-  final_price: number;
-  is_default: boolean;
-}
-
-export interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  image?: string | null;
-}
+import { getImageUrl, normalizeImages } from '@/utils/image';
 
 export interface Product {
   id: number;
-  category_id: number;
   name: string;
   slug: string;
-  description?: string | null;
   price: number;
   discount_price?: number | null;
   discount_percentage?: number | null;
-  discount_starts_at?: string | null;
-  discount_ends_at?: string | null;
-  images?: string[];
-  stock?: number | null;
-  sugar_level?: number | null;
   primary_image?: string | null;
-  image_urls?: string[];
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
-
-  // New appended fields
-  variants?: Variant[];
-  final_price?: number;
-  lowest_price?: number;
+  image_urls?: string[] | null;
+  images?: string[] | null;
+  variants?: any[];
   has_variants?: boolean;
   is_on_sale?: boolean;
+  lowest_price?: number;
+  final_price?: number;
+  category?: any;
+  display_image: string;  // guaranteed to exist
 }
 
-export interface ProductResponse {
-  data: Product[];
-  current_page: number;
-  last_page: number;
-  total: number;
-}
-
-/* ---------------- HELPERS ---------------- */
-
-const normalizeImages = (images: any): string[] => {
-  if (!images) return [];
-
-  if (typeof images === "string") {
-    try {
-      const parsed = JSON.parse(images);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch {
-      return [images];
+// 1. Define the helper HERE at the top so both functions can use it
+const parseImageUrl = (url?: string | null) => {
+  if (!url) return null;
+  
+  // If it's already a full URL
+  if (url.startsWith('http')) {
+    // Force HTTPS in production to prevent Mixed Content blocked errors
+    if (import.meta.env.PROD) {
+      return url.replace(/^http:\/\//i, 'https://');
     }
+    return url;
   }
-
-  return Array.isArray(images) ? images : [];
+  
+  // If it's a relative path, pass it to your original utility
+  return getImageUrl(url);
 };
 
-/* ---------------- SERVICE ---------------- */
-
 export const productService = {
-  /* GET PRODUCTS */
-  async getProducts(
-    page = 1,
-    category?: string,
-    search?: string,
-    discountPercentage?: number
-  ): Promise<ProductResponse> {
+  async getProducts(page = 1, category?: string, search?: string, discountPercentage?: number) {
     const response = await api.get("/products", {
       params: { page, category, search, discount_percentage: discountPercentage },
     });
 
     const res = response.data;
 
-    res.data = res.data.map((product: any) => ({
-      ...product,
-      price: Number(product.price),
-      discount_price: product.discount_price != null ? Number(product.discount_price) : null,
-      final_price: product.final_price ? Number(product.final_price) : null,
-      lowest_price: product.lowest_price ? Number(product.lowest_price) : null,
-      has_variants: !!product.has_variants,
-      is_on_sale: !!product.is_on_sale,
-      variants: product.variants ?? [],
-      display_image: product.primary_image || "/images/placeholder.jpg",
-      all_images: product.image_urls?.length > 0 ? product.image_urls : ["/images/placeholder.jpg"],
-    }));
+    if (import.meta.env.DEV) {
+      console.log("🔥 RAW first product (list):", JSON.stringify(res.data?.[0], null, 2));
+    }
+
+    res.data = res.data.map((raw: any): Product => {
+      // Prefer building from raw.images (avoids backend APP_URL issues)
+      const firstImg = parseImageUrl(raw.images?.[0] ?? raw.image_urls?.[0] ?? raw.primary_image);
+      const primary = parseImageUrl(raw.primary_image) || firstImg;
+
+      return {
+        ...raw,
+        price: Number(raw.price ?? 0),
+        discount_price: raw.discount_price != null ? Number(raw.discount_price) : null,
+        final_price: raw.final_price != null ? Number(raw.final_price) : null,
+        lowest_price: raw.lowest_price != null ? Number(raw.lowest_price) : null,
+        has_variants: !!raw.variants?.length,
+        is_on_sale: !!raw.is_on_sale || (raw.discount_price != null && raw.discount_price < raw.price),
+        primary_image: primary,
+        images: normalizeImages(raw.images),
+        image_urls: normalizeImages(raw.image_urls),
+        display_image: primary || firstImg || '/images/placeholder.svg',
+      };
+    });
 
     return res;
   },
 
-  /* GET SINGLE PRODUCT */
   async getProductBySlug(slug: string): Promise<Product> {
-    const response = await api.get(`/products/${slug}`);
-    const product = response.data;
+    const { data: raw } = await api.get(`/products/${slug}`);
+
+    if (import.meta.env.DEV) {
+      console.log("🔥 RAW single product:", JSON.stringify(raw, null, 2));
+    }
+
+    const firstImg = parseImageUrl(raw.images?.[0] ?? raw.image_urls?.[0] ?? raw.primary_image);
+    const primary = parseImageUrl(raw.primary_image) || firstImg;
 
     return {
-      ...product,
-      price: Number(product.price),
-      discount_price: product.discount_price != null ? Number(product.discount_price) : null,
-      final_price: product.final_price ? Number(product.final_price) : null,
-      lowest_price: product.lowest_price ? Number(product.lowest_price) : null,
-      has_variants: !!product.has_variants,
-      is_on_sale: !!product.is_on_sale,
-      variants: product.variants ?? [],
-      images: normalizeImages(product.images || product.image_urls),
+      ...raw,
+      price: Number(raw.price ?? 0),
+      discount_price: raw.discount_price != null ? Number(raw.discount_price) : null,
+      final_price: raw.final_price != null ? Number(raw.final_price) : null,
+      lowest_price: raw.lowest_price != null ? Number(raw.lowest_price) : null,
+      has_variants: !!raw.variants?.length,
+      is_on_sale: !!raw.is_on_sale || (raw.discount_price != null && raw.discount_price < raw.price),
+      primary_image: primary,
+      images: normalizeImages(raw.images),
+      image_urls: normalizeImages(raw.image_urls),
+      display_image: primary || firstImg || '/images/placeholder.svg',
     };
-  },
-
-  /* GET SINGLE PRODUCT BY ID (admin) */
-  async getProductById(id: number): Promise<Product> {
-    const response = await api.get(`/products/${id}`);
-    const product = response.data;
-
-    return {
-      ...product,
-      price: Number(product.price),
-      discount_price: product.discount_price != null ? Number(product.discount_price) : null,
-      discount_percentage: product.discount_percentage != null ? Number(product.discount_percentage) : null,
-      final_price: product.final_price ? Number(product.final_price) : null,
-      lowest_price: product.lowest_price ? Number(product.lowest_price) : null,
-      has_variants: !!product.has_variants,
-      is_on_sale: !!product.is_on_sale,
-      variants: product.variants ?? [],
-      images: normalizeImages(product.images || product.image_urls),
-      image_urls: product.image_urls || [],
-      primary_image: product.primary_image,
-    };
-  },
-
-  /* Other methods (create/update) - add same mapping for new fields */
-  async createProduct(formData: FormData): Promise<Product> {
-    const response = await api.post("/products", formData);
-    const product = response.data;
-
-    return {
-      ...product,
-      price: Number(product.price),
-      discount_price: product.discount_price != null ? Number(product.discount_price) : null,
-      final_price: product.final_price ? Number(product.final_price) : null,
-      lowest_price: product.lowest_price ? Number(product.lowest_price) : null,
-      has_variants: !!product.has_variants,
-      is_on_sale: !!product.is_on_sale,
-      variants: product.variants ?? [],
-      images: normalizeImages(product.images || product.image_urls),
-    };
-  },
-
-  async updateProduct(id: number, formData: FormData): Promise<Product> {
-    const response = await api.put(`/products/${id}`, formData);
-    const product = response.data;
-
-    return {
-      ...product,
-      price: Number(product.price),
-      discount_price: product.discount_price != null ? Number(product.discount_price) : null,
-      final_price: product.final_price ? Number(product.final_price) : null,
-      lowest_price: product.lowest_price ? Number(product.lowest_price) : null,
-      has_variants: !!product.has_variants,
-      is_on_sale: !!product.is_on_sale,
-      variants: product.variants ?? [],
-      images: normalizeImages(product.images || product.image_urls),
-    };
-  },
-
-  async getCategories(): Promise<Category[]> {
-    const response = await api.get("/categories");
-    return response.data;
   },
 };
+
+export default productService;

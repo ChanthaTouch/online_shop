@@ -3,7 +3,7 @@
   <div class="group relative rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-b from-white to-amber-50 border border-amber-100 hover:border-rose-300">
     <div class="relative overflow-hidden h-56">
       <img 
-        :src="product.image || '/images/placeholder.jpg'" 
+        :src="product.image || '/images/placeholder.svg'" 
         :alt="product.name"
         class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500 bg-gradient-to-br from-amber-100 to-orange-100"
         loading="lazy"

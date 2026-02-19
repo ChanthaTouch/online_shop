@@ -47,7 +47,10 @@
           <div v-for="cat in categories" :key="cat.id" 
             class="group relative flex-shrink-0 w-[360px] md:w-[400px] h-[520px] rounded-3xl overflow-hidden snap-center shadow-xl transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl">
             <router-link :to="{ name: 'Products', query: { category: cat.slug } }" class="absolute inset-0 z-30" />
-            <img v-if="cat.image" :src="cat.image" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" alt="{{ cat.name }}" />
+            <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" @error="$event.target.src = '/images/placeholder.svg'" />
+            <div v-else class="absolute inset-0 bg-gradient-to-br from-amber-100 to-stone-200 flex items-center justify-center">
+              <span class="text-6xl opacity-40">☕</span>
+            </div>
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10"></div>
             <div class="absolute bottom-0 left-0 p-10 z-20">
               <h3 class="text-white text-4xl font-serif mb-4">{{ cat.name }}</h3>
@@ -83,7 +86,7 @@
 
             <div class="relative aspect-[3/4] mb-8 overflow-hidden rounded-[2.5rem] bg-[#f5f4f0] transition-all duration-700 group-hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] group-hover:-translate-y-3">
               <ProductCard
-                :product="{ ...product, image: product.display_image || '/images/placeholder.jpg' }"
+                :product="{ ...product, image: product.display_image || '/images/placeholder.svg' }"
                 class="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
               />
 

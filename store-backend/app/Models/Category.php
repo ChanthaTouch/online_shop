@@ -3,17 +3,19 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Category extends Model
 {
     protected $fillable = ['name', 'slug', 'description', 'image'];
+
     public function products()
     {
         return $this->hasMany(Product::class);
     }
-    public function getImageUrlAttribute(): ?string
-    {
-        return $this->image ? Storage::url($this->image) : null;
-        // or: return $this->image ? asset('storage/' . $this->image) : null;
-    }
+
+    /**
+     * Image is stored as relative path (e.g. "categories/xyz.jpg").
+     * Frontend builds full URL from this. No accessor needed for API.
+     */
 }

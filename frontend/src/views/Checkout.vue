@@ -29,7 +29,7 @@
               <div v-else class="space-y-4">
                 <div v-for="item in cart.items" :key="item.id" class="flex gap-4 pb-4 border-b border-stone-200 last:border-b-0">
                   <img
-                    :src="item.product.primary_image || '/images/placeholder.jpg'"
+                    :src="item.product.primary_image || item.product?.images?.[0] || '/images/placeholder.svg'"
                     :alt="item.product.name"
                     class="w-20 h-20 object-cover rounded-2xl shadow-md"
                   />
@@ -138,7 +138,6 @@
 import { ref, onMounted } from 'vue'
 import { cartService } from '@/services/cart'
 import { orderService } from '@/services/orders'
-
 const cart = ref<any>({ items: [], total: 0 })
 const loadingCart = ref(true)
 const submitting = ref(false)

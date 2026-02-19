@@ -1,88 +1,158 @@
-// src/services/categorie.ts
+// src/services/category.ts    ← recommended filename (singular or plural is fine, but consistent naming helps)
 
-import api from "./api";
+import api from '@/services/api';
+import { getStorageBase } from '@/utils/image';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';  // Or use import.meta.env.VITE_API_URL for env var
-
-/* ---------------- TYPES ---------------- */
+/* ────────────────────────────────────────────────
+   TYPES
+───────────────────────────────────────────────── */
 
 export interface Category {
-  id: number;
-  name: string;
-  slug: string | null;
-  description: string | null;
-  image: string | null;  // full URL after normalization
-  created_at: string;
-  updated_at: string;
+  id:           number;
+  name:         string;
+  slug:         string | null;
+  description?: string | null;
+  image?:       string | null;     // path from backend (e.g. "categories/coffee.jpg")
+  created_at:   string;
+  updated_at:   string;
 }
 
-/* ---------------- HELPERS ---------------- */
+export interface NormalizedCategory extends Category {
+  image: string | null;            // always full URL or null
+}
 
-/**
- * Normalize category image to full URL
- */
-const normalizeCategoryImage = (image: any): string | null => {
-  if (!image || typeof image !== 'string') return null;
-  const fullUrl = `${API_BASE_URL}/storage/${image}`;
-  console.log('Normalized category image URL:', fullUrl);  // Debug log
-  return fullUrl;
-};
+/* ────────────────────────────────────────────────
+   IMAGE URL NORMALIZATION
+───────────────────────────────────────────────── */
 
-/* ---------------- SERVICE ---------------- */
+function normalizeImageUrl(imagePath: string | null | undefined): string | null {
+  if (!imagePath || typeof imagePath !== 'string' || imagePath.trim() === '') {
+    return null;
+  }
+
+  // Already absolute URL → return as-is
+  if (/^https?:\/\//i.test(imagePath) || imagePath.startsWith('//')) {
+    return imagePath;
+  }
+
+  // Common Laravel storage patterns
+  let cleanPath = imagePath
+    .replace(/^\/?public\//, '')
+    .replace(/^\/?storage\//, '')
+    .replace(/^\//, '');
+
+  const base = getStorageBase();
+  if (!base) return `/storage/${cleanPath}`;
+  return `${base}/storage/${cleanPath}`;
+}
+
+/* ────────────────────────────────────────────────
+   SERVICE
+───────────────────────────────────────────────── */
 
 export const categoryService = {
   /**
-   * GET ALL CATEGORIES
-   * Used on homepage / category listing
+   * Fetch all product categories
    */
-  async getCategories(): Promise<Category[]> {
-    const response = await api.get("/categories");
-    const categories: any[] = response.data;
+  async getCategories(): Promise<NormalizedCategory[]> {
+    try {
+      const response = await api.get('/categories');
+      
+      // Handle both { data: [...] } and direct array responses
+      const raw = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data?.data ?? []);
 
-    const mapped = categories.map((cat) => ({
-      ...cat,
-      slug: cat.slug ?? null,
-      description: cat.description ?? null,
-      image: normalizeCategoryImage(cat.image),
-      created_at: cat.created_at,
-      updated_at: cat.updated_at,
-    }));
+      const categories = raw.map((cat: any): NormalizedCategory => ({
+        id:           Number(cat.id),
+        name:         String(cat.name ?? ''),
+        slug:         cat.slug ?? null,
+        description:  cat.description ?? null,
+        image:        normalizeImageUrl(cat.image),
+        created_at:   String(cat.created_at ?? ''),
+        updated_at:   String(cat.updated_at ?? ''),
+      }));
 
-    console.log('Loaded categories with images:', mapped.map(c => ({ name: c.name, image: c.image })));  // Debug
-    return mapped;
+      // Optional: debug in development only
+      if (import.meta.env.DEV) {
+        console.log('Loaded categories:', 
+          categories.map(c => ({ 
+            name: c.name, 
+            slug: c.slug, 
+            image: c.image 
+          }))
+        );
+      }
+
+      return categories;
+    } catch (err) {
+      console.warn('Failed to load categories:', err);
+      return [];   // graceful fallback – UI usually handles empty array well
+    }
   },
+
 
   /**
-   * Optional: GET SINGLE CATEGORY BY SLUG
+   * Fetch single category by slug
    */
-  async getCategoryBySlug(slug: string): Promise<Category> {
-    const response = await api.get(`/categories/${slug}`);
-    const category = response.data;
+  async getCategoryBySlug(slug: string): Promise<NormalizedCategory | null> {
+    if (!slug?.trim()) return null;
 
-    return {
-      ...category,
-      slug: category.slug ?? null,
-      description: category.description ?? null,
-      image: normalizeCategoryImage(category.image),
-      created_at: category.created_at,
-      updated_at: category.updated_at,
-    };
+    try {
+      const response = await api.get(`/categories/${slug.trim()}`);
+      const cat = response.data;
+
+      if (!cat?.id) return null;
+
+      return {
+        id:           Number(cat.id),
+        name:         String(cat.name ?? ''),
+        slug:         cat.slug ?? null,
+        description:  cat.description ?? null,
+        image:        normalizeImageUrl(cat.image),
+        created_at:   String(cat.created_at ?? ''),
+        updated_at:   String(cat.updated_at ?? ''),
+      };
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        return null;
+      }
+      console.warn(`Failed to load category ${slug}:`, err);
+      return null;
+    }
   },
+
 
   /**
-   * Optional: CREATE CATEGORY (admin only)
+   * Create new category (admin only)
+   * Expects FormData with fields: name, slug?, description?, image (file)
    */
-  async createCategory(formData: FormData): Promise<Category> {
-    const response = await api.post("/categories", formData);
-    const category = response.data;
+  async createCategory(formData: FormData): Promise<NormalizedCategory> {
+    try {
+      const response = await api.post('/categories', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
 
-    return {
-      ...category,
-      slug: category.slug ?? null,
-      description: category.description ?? null,
-      image: normalizeCategoryImage(category.image),
-      created_at: category.created_at,
-      updated_at: category.updated_at,
-    };
+      const cat = response.data;
+
+      return {
+        id:           Number(cat.id),
+        name:         String(cat.name ?? ''),
+        slug:         cat.slug ?? null,
+        description:  cat.description ?? null,
+        image:        normalizeImageUrl(cat.image),
+        created_at:   String(cat.created_at ?? ''),
+        updated_at:   String(cat.updated_at ?? ''),
+      };
+    } catch (err) {
+      console.error('Failed to create category:', err);
+      throw err;   // let caller handle error (show toast, etc.)
+    }
   },
+
+  // Bonus: if you later need update/delete
+  // async updateCategory(id: number, formData: FormData): Promise<NormalizedCategory> { ... }
+  // async deleteCategory(id: number): Promise<void> { ... }
 };
+
+export default categoryService;
