@@ -2,25 +2,21 @@
 
 return [
 
-    'paths' => ['api/*', 'storage/*', 'sanctum/csrf-cookie', 'login', 'register'],
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'register'],
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-        // Development (local)
+        // Local development
         'http://localhost:5173',
-        'http://localhost:5174',
         'http://127.0.0.1:5173',
-        'http://127.0.0.1:5174',
-        'http://localhost:3000',
         'http://localhost:8000',
-        'http://localhost:8080',
 
-        // Production - Your actual Railway Frontend URL
+        // Production frontend (Railway)
         'https://awake-comfort-production.up.railway.app',
     ],
 
-    // Allow any Railway app subdomain (e.g. if frontend URL changes)
+    // Allow any Railway subdomain (fallback if frontend URL changes)
     'allowed_origins_patterns' => [
         '#^https://[a-z0-9-]+\.up\.railway\.app$#',
     ],
@@ -31,5 +27,5 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => true,   // Required for token auth + cookies
+    'supports_credentials' => true,
 ];
