@@ -2,10 +2,11 @@
 
 /**
  * Get the backend base URL for storage assets (images).
- * - When VITE_API_URL is empty, localhost, 127.0.0.1, or /api → use '' (relative /storage, Vite proxy)
- * - Otherwise use full backend URL (e.g. Railway)
+ * - In DEV: always use '' so /storage goes through Vite proxy (avoids 307/CORS).
+ * - In PROD: use full backend URL from VITE_API_URL when set.
  */
 export const getStorageBase = (): string => {
+  if (import.meta.env.DEV) return '';
   const envUrl = (import.meta.env.VITE_API_URL || '').trim();
   const normalized = envUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '');
   const isLocal = !normalized || /localhost|127\.0\.0\.1|^\/api/i.test(normalized);

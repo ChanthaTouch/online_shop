@@ -89,15 +89,15 @@ class Product extends Model
 
     /* ===============================
         IMAGE ACCESSORS
+        Return raw storage paths so frontend builds URLs (avoids 307 redirects / CORS).
        =============================== */
 
     protected function primaryImage(): Attribute
     {
         return Attribute::make(
-            get: fn () =>
-                isset($this->images[0])
-                    ? asset('storage/' . ltrim($this->images[0], '/'))
-                    : null
+            get: fn () => isset($this->images[0])
+                ? ltrim($this->images[0], '/')
+                : null
         );
     }
 
@@ -106,7 +106,7 @@ class Product extends Model
         return Attribute::make(
             get: fn () =>
                 collect($this->images ?? [])
-                    ->map(fn ($p) => asset('storage/' . ltrim($p, '/')))
+                    ->map(fn ($p) => ltrim($p, '/'))
                     ->toArray()
         );
     }
