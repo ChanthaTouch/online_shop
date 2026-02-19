@@ -18,6 +18,12 @@ use App\Http\Controllers\MoceanController;   // ← Add this line
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Public Catalog Routes (no auth – storefront must load categories/products)
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{id}', [CategoryController::class, 'show']);
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{slug}', [ProductController::class, 'show']);
+
 // Authenticated user routes
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -42,15 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ], 403);
     });
 
-    // Public Catalog Routes
-    Route::get('/categories', [CategoryController::class, 'index']);
-    Route::get('/categories/{id}', [CategoryController::class, 'show']);
-
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{slug}', [ProductController::class, 'show']);
-
     // ────────────────────────────────────────────────
-    //     Admin-only Catalog Management
+    //     Admin-only Catalog Management (modify/delete require auth)
     // ────────────────────────────────────────────────
     Route::middleware('can:manage-catalog')->group(function () {
         Route::post('/categories', [CategoryController::class, 'store']);

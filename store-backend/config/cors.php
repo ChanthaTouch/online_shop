@@ -20,7 +20,10 @@ return [
         'https://awake-comfort-production.up.railway.app',
     ],
 
-    'allowed_origins_patterns' => [],
+    // Allow any Railway app subdomain (e.g. if frontend URL changes)
+    'allowed_origins_patterns' => [
+        '#^https://[a-z0-9-]+\.up\.railway\.app$#',
+    ],
 
     'allowed_headers' => ['*'],
 
