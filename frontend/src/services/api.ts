@@ -6,7 +6,7 @@ import router from "@/router";
 // - Local dev: use /api (Vite proxy forwards to Laravel backend)
 // - Production: use VITE_API_URL (Railway backend domain)
 const rawBase =
-  import.meta.env.VITE_API_URL ??
+  import.meta.env.VITE_API_URL ?? '/api';
   (import.meta.env.DEV ? "/api" : "http://127.0.0.1:8000/api");
 
 const baseURL = rawBase.replace(/\/+$/, "").endsWith("/api")

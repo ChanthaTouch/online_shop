@@ -1,9 +1,14 @@
-# Ignore environment files
+# ───────────────────────────────
+# Environment files
+# ───────────────────────────────
 .env
 .env.*
-!.env.example   # keep example file for reference
+!.env.example        # keep example file for reference
+!.env.production     # keep production template if needed
 
+# ───────────────────────────────
 # Laravel specific
+# ───────────────────────────────
 /vendor/
 /node_modules/
 /public/storage
@@ -12,11 +17,15 @@
 /storage/logs/*
 /bootstrap/cache/
 
+# ───────────────────────────────
 # Frontend (Vite/Node)
+# ───────────────────────────────
 frontend/node_modules/
 frontend/dist/
 
+# ───────────────────────────────
 # IDE/editor files
+# ───────────────────────────────
 .vscode/
 .idea/
 *.swp
@@ -24,10 +33,15 @@ frontend/dist/
 *.bak
 *.tmp
 
+# ───────────────────────────────
 # OS files
+# ───────────────────────────────
 .DS_Store
 Thumbs.db
 
+# ───────────────────────────────
 # History files
+# ───────────────────────────────
 .history/
 store-backend/.history/
+frontend/.history/
