@@ -51,6 +51,14 @@ ENV PORT=${PORT}
 RUN sed -i "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf \
     && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf \
     && sed -i "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
+    
+RUN echo "<Directory ${APACHE_DOCUMENT_ROOT}>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>" >> /etc/apache2/sites-available/000-default.conf \
+    && a2enmod rewrite \
+    && sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf    
 
 # Add ServerName to suppress warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
