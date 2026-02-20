@@ -137,7 +137,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { cartService } from '@/services/cart'
-import { orderService } from '@/services/orders'
+import { orderService } from "@/services/orders";
 const cart = ref<any>({ items: [], total: 0 })
 const loadingCart = ref(true)
 const submitting = ref(false)
