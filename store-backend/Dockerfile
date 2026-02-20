@@ -1,13 +1,13 @@
 FROM php:8.2-apache-alpine
 
-# Install required system packages and PHP extensions
+# Install system dependencies and PHP extensions
 RUN apk add --no-cache \
     git unzip curl zip libzip-dev oniguruma-dev \
     libpng-dev libjpeg-turbo-dev freetype-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql zip gd mbstring exif pcntl bcmath
 
-# Install composer
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Set working directory
@@ -16,55 +16,51 @@ WORKDIR /var/www/html
 # Copy application code
 COPY . .
 
-# Set permissions
+# Fix permissions (very important for Laravel)
 RUN chown -R www-data:www-data . \
     && chmod -R 775 storage bootstrap/cache
 
-# Install dependencies (production optimized)
+# Install Composer dependencies (production mode)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# Create storage symlink (for public/storage)
+# Create storage symlink
 RUN php artisan storage:link 2>/dev/null || true
 
-# Enable Apache mod_rewrite (essential for Laravel routing)
-RUN a2enmod rewrite
+# Enable important Apache modules
+RUN a2enmod rewrite headers
 
-# Set Apache document root to /public
+# Set Laravel public directory as document root
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 
-# Update Apache configuration for document root
+# Update Apache configuration - document root
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # ───────────────────────────────────────────────
-# Railway / production fixes
+# Railway-specific fixes
 # ───────────────────────────────────────────────
 
-# Remove any potential conflicting entrypoint that might run artisan serve
-RUN rm -f /usr/local/bin/docker-php-entrypoint 2>/dev/null || true
-
-# Support Railway's dynamic PORT (defaults to 80 if not set)
+# Support Railway PORT variable (they set it automatically)
 ARG PORT=80
 ENV PORT=${PORT}
 
-# Update Apache to listen on the correct port
-RUN sed -i "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf \
-    && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf \
+# Make Apache listen on all interfaces and the correct port
+RUN echo "Listen 0.0.0.0:${PORT}" > /etc/apache2/ports.conf \
+    && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:80>\n    ServerName localhost/g" /etc/apache2/sites-available/000-default.conf \
     && sed -i "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
-    
+
+# Add proper <Directory> block for Laravel
 RUN echo "<Directory ${APACHE_DOCUMENT_ROOT}>\n\
     Options Indexes FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
-</Directory>" >> /etc/apache2/sites-available/000-default.conf \
-    && a2enmod rewrite \
-    && sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf    
+</Directory>" >> /etc/apache2/apache2.conf
 
-# Add ServerName to suppress warning
+# Suppress server name warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Expose the port we're actually using
+# Expose the port (important for Railway)
 EXPOSE ${PORT}
 
-# Start Apache in foreground (this should now actually run)
+# Start Apache in foreground mode
 CMD ["apache2-foreground"]
