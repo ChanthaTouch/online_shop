@@ -1,0 +1,7 @@
+# 1. Change the base image
+FROM php:8.2-apache
+
+# 2. Change the package manager from apk to apt-get
+RUN apt-get update && apt-get install -y \
+    # list your dependencies here (e.g., git, unzip, libpng-dev) \
+    && rm -rf /var/lib/apt/lists/*
