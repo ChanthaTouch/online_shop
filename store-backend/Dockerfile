@@ -26,10 +26,10 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
 # Create storage symlink
 RUN php artisan storage:link 2>/dev/null || true
 
-# Enable Apache rewrite (works in Alpine image)
+# Enable Laravel’s .htaccess by allowing overrides
 RUN sed -i 's#AllowOverride None#AllowOverride All#' /etc/apache2/httpd.conf
 
-# Set document root
+# Set document root (Alpine default is /var/www/localhost/htdocs)
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e "s!/var/www/localhost/htdocs!${APACHE_DOCUMENT_ROOT}!g" /etc/apache2/httpd.conf
 
