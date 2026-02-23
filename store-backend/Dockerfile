@@ -1,52 +1,30 @@
-# Use official PHP 8.2 with Apache
-FROM php:8.2-apache
+FROM php:8.2-apache-alpine
 
-# Set working directory
-WORKDIR /var/www/html
+RUN apk add --no-cache \
+    git unzip curl zip libzip-dev oniguruma-dev \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql zip gd mbstring exif pcntl bcmath
 
-# Install system dependencies + PHP extensions
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    zip \
-    libzip-dev \
-    libonig-dev \
-    libxml2-dev \
-    && docker-php-ext-install pdo_mysql zip bcmath \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# 🔥 FIX: Remove ALL MPM modules completely
-RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
-    && rm -f /etc/apache2/mods-available/mpm_*.load \
-    && a2enmod mpm_prefork
-
-# Enable rewrite
-RUN a2enmod rewrite
-
-# Prevent Apache warning
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
-
-# Set Apache document root to Laravel public
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
-
-# Copy Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy project files
+WORKDIR /var/www/html
+
 COPY . .
 
-# Install Laravel dependencies (use caching best practice)
-RUN composer install --no-dev --optimize-autoloader --no-interaction
-
-# Set correct permissions
-RUN chown -R www-data:www-data storage bootstrap/cache \
+RUN chown -R www-data:www-data . \
     && chmod -R 775 storage bootstrap/cache
 
-# Expose port
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Create storage symlink so /storage URLs serve uploaded files
+RUN php artisan storage:link 2>/dev/null || true
+
+RUN a2enmod rewrite
+
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+
 EXPOSE 80
 
-# Start Apache
 CMD ["apache2-foreground"]
