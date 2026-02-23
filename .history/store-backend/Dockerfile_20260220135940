@@ -1,0 +1,62 @@
+FROM php:8.2-apache-alpine
+
+# Install required system packages and PHP extensions
+RUN apk add --no-cache \
+    git unzip curl zip libzip-dev oniguruma-dev \
+    libpng-dev libjpeg-turbo-dev freetype-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql zip gd mbstring exif pcntl bcmath
+
+# Install composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application code
+COPY . .
+
+# Set permissions
+RUN chown -R www-data:www-data . \
+    && chmod -R 775 storage bootstrap/cache
+
+# Install dependencies (production optimized)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+# Create storage symlink (for public/storage)
+RUN php artisan storage:link 2>/dev/null || true
+
+# Enable Apache mod_rewrite (essential for Laravel routing)
+RUN a2enmod rewrite
+
+# Set Apache document root to /public
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+
+# Update Apache configuration for document root
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# ───────────────────────────────────────────────
+# Railway / production fixes
+# ───────────────────────────────────────────────
+
+# Remove any potential conflicting entrypoint that might run artisan serve
+RUN rm -f /usr/local/bin/docker-php-entrypoint 2>/dev/null || true
+
+# Support Railway's dynamic PORT (defaults to 80 if not set)
+ARG PORT=80
+ENV PORT=${PORT}
+
+# Update Apache to listen on the correct port
+RUN sed -i "s/Listen 80/Listen ${PORT}/g" /etc/apache2/ports.conf \
+    && sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf \
+    && sed -i "s/AllowOverride None/AllowOverride All/g" /etc/apache2/sites-available/000-default.conf
+
+# Add ServerName to suppress warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Expose the port we're actually using
+EXPOSE ${PORT}
+
+# Start Apache in foreground (this should now actually run)
+CMD ["apache2-foreground"]

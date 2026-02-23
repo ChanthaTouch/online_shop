@@ -1,0 +1,33 @@
+# Ignore environment files
+.env
+.env.*
+!.env.example   # keep example file for reference
+
+# Laravel specific
+/vendor/
+/node_modules/
+/public/storage
+/storage/*.key
+/storage/framework/*
+/storage/logs/*
+/bootstrap/cache/
+
+# Frontend (Vite/Node)
+frontend/node_modules/
+frontend/dist/
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# History files
+.history/
+store-backend/.history/
