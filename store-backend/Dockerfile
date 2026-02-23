@@ -1,30 +1,32 @@
-FROM php:8.2-apache-alpine
+FROM php:8.2-apache
 
-RUN apk add --no-cache \
-    git unzip curl zip libzip-dev oniguruma-dev \
-    libpng-dev libjpeg-turbo-dev freetype-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_mysql zip gd mbstring exif pcntl bcmath
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    zip \
+    libzip-dev \
+    && docker-php-ext-install pdo_mysql zip
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-
-WORKDIR /var/www/html
-
-COPY . .
-
-RUN chown -R www-data:www-data . \
-    && chmod -R 775 storage bootstrap/cache
-
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
-
-# Create storage symlink so /storage URLs serve uploaded files
-RUN php artisan storage:link 2>/dev/null || true
-
+# Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy composer from official image
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy project files
+COPY . .
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
+
+# Set Apache DocumentRoot to Laravel public folder
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+
+# Fix permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 80
-
-CMD ["apache2-foreground"]
