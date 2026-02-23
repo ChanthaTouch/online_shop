@@ -4,7 +4,7 @@ FROM php:8.2-apache
 # Set working directory
 WORKDIR /var/www/html
 
-# Install system dependencies and PHP extensions
+# Install system dependencies + PHP extensions
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -12,33 +12,41 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install pdo_mysql zip bcmath
+    && docker-php-ext-install pdo_mysql zip bcmath \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# Fix Apache MPM conflict: disable all, then enable prefork
-RUN a2dismod mpm_event mpm_worker mpm_prefork || true \
+# 🔥 FIX: Remove ALL MPM modules completely
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
+    && rm -f /etc/apache2/mods-available/mpm_*.load \
     && a2enmod mpm_prefork
 
-# Enable Apache rewrite module
+# Enable rewrite
 RUN a2enmod rewrite
 
-# Copy Composer from official Composer image
+# Prevent Apache warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Set Apache document root to Laravel public
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
+
+# Copy Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Copy Laravel project files
+# Copy project files
 COPY . .
 
-# Install Laravel dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Install Laravel dependencies (use caching best practice)
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Set Laravel public folder as Apache document root
-RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
-
-# Set permissions for Laravel folders
+# Set correct permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Expose Apache port
+# Expose port
 EXPOSE 80
 
-# Start Apache in the foreground
+# Start Apache
 CMD ["apache2-foreground"]
