@@ -1,7 +1,7 @@
 // vite.config.ts
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import tailwindcss from '@tailwindcss/vite'   // ← add this import
+import tailwindcss from '@tailwindcss/vite'   // keep if you're really using this plugin
 import path from 'path'
 
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
         },
       },
     }),
-    tailwindcss(),   // ← add this line
+    tailwindcss(),   // ← remove if you're using PostCSS + tailwind.config + vite-plugin not needed
   ],
 
   resolve: {
@@ -24,27 +24,27 @@ export default defineConfig({
   },
 
   server: {
-    host: '0.0.0.0',
+    // host: '0.0.0.0',         // ← usually not needed (only if accessing from other devices)
     port: 5173,
-    strictPort: true,
+    // strictPort: true,        // ← optional
 
     proxy: {
+      // ── Important: NO rewrite for /api ──
       '/api': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://localhost:8000',   // or 'http://127.0.0.1:8000'
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // rewrite: NEVER add this for Laravel + Sanctum + /api prefix
       },
+
       '/storage': {
-        target: 'http://127.0.0.1:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
     },
 
-    hmr: {
-      host: 'localhost',
-    },
+    // hmr: { host: 'localhost' },   // ← usually not needed
   },
 
   build: {
