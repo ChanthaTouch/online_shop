@@ -1,34 +1,37 @@
 FROM php:8.2-apache
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     libzip-dev \
     && docker-php-ext-install zip pdo pdo_mysql
 
-RUN a2enmod rewrite
-
+# Set Apache document root to Laravel public folder
 RUN sed -i 's!/var/www/html!/var/www/html/public!g' \
     /etc/apache2/sites-available/000-default.conf
 
+# Enable Apache rewrite
+RUN a2enmod rewrite
+
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
+# Copy entire Laravel project
 COPY . .
 
-# Remove vendor if exists (extra safety)
-RUN rm -rf vendor
+# Make directory safe for Git (avoid dubious ownership)
+RUN git config --global --add safe.directory /var/www/html
 
-RUN composer install \
-    --no-dev \
-    --optimize-autoloader \
-    --prefer-dist \
-    --no-interaction
-
+# Fix permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 storage \
     && chmod -R 755 bootstrap/cache
+
+# Install Laravel dependencies (no Git usage)
+RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
 
 EXPOSE 80
 
