@@ -32,21 +32,12 @@ RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Make the repo safe for Git
-RUN git config --global --add safe.directory /var/www/html
+# Install Laravel dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# Fix permissions before running composer
+# Fix permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage \
     && chmod -R 755 /var/www/html/bootstrap/cache
-
-# Switch to www-data user
-USER www-data
-
-# Install Laravel dependencies as www-data
-RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
-
-# Switch back to root (optional, needed for Apache)
-USER root
 
 EXPOSE 80
