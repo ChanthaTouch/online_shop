@@ -1,0 +1,140 @@
+# Use official PHP 8.2 with Apache
+FROM php:8.2-apache
+
+# ────────────────────────────────────────────────
+# Install system dependencies
+# ────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y \
+    git unzip libzip-dev curl \
+    && docker-php-ext-install zip pdo pdo_mysql \
+    && rm -rf /var/lib/apt/lists/*
+
+# ────────────────────────────────────────────────
+# Install Node.js 20 + pnpm (for Vue frontend build)
+# ────────────────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g pnpm@latest
+
+# ────────────────────────────────────────────────
+# Apache configuration – enable needed modules
+# ────────────────────────────────────────────────
+RUN a2enmod rewrite headers
+
+# Force only mpm_prefork (required for mod_php)
+RUN a2dismod mpm_event mpm_worker || true \
+    && a2enmod mpm_prefork || true \
+    && rm -f /etc/apache2/mods-enabled/mpm_*event* /etc/apache2/mods-enabled/mpm_*worker* || true
+
+# ────────────────────────────────────────────────
+# Composer
+# ────────────────────────────────────────────────
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Set working directory
+WORKDIR /var/www/html
+
+# ────────────────────────────────────────────────
+# Copy composer files first → better layer caching
+# ────────────────────────────────────────────────
+COPY composer.json composer.lock* ./
+
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction --no-scripts
+
+# ────────────────────────────────────────────────
+# Copy the entire project
+# ────────────────────────────────────────────────
+COPY . .
+
+# ────────────────────────────────────────────────
+# Publish CORS config and clear all caches
+# ────────────────────────────────────────────────
+RUN php artisan config:publish --tag=cors \
+    && php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan route:clear \
+    && php artisan view:clear \
+    && php artisan optimize:clear || true
+
+# ────────────────────────────────────────────────
+# Build Vue frontend
+# ────────────────────────────────────────────────
+WORKDIR /var/www/html/frontend
+
+# Copy frontend dependency files first (caching)
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
+# Install frontend dependencies – fallback if lockfile missing
+RUN pnpm install || pnpm install --no-frozen-lockfile
+
+# Copy frontend source code
+COPY frontend/ .
+
+# Build production assets
+RUN pnpm run build
+
+# Copy built files to Laravel's public directory
+RUN cp -r dist/* /var/www/html/public/ \
+    && cp -r dist/.* /var/www/html/public/ 2>/dev/null || true
+
+# ────────────────────────────────────────────────
+# Return to Laravel root
+# ────────────────────────────────────────────────
+WORKDIR /var/www/html
+
+# ────────────────────────────────────────────────
+# Set correct permissions
+# ────────────────────────────────────────────────
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html \
+    && find /var/www/html/storage /var/www/html/bootstrap/cache -type f -exec chmod 664 {} \; \
+    && find /var/www/html/storage /var/www/html/bootstrap/cache -type d -exec chmod 775 {} \;
+
+# ────────────────────────────────────────────────
+# Remove default Apache config
+# ────────────────────────────────────────────────
+RUN rm -f /etc/apache2/sites-enabled/000-default.conf
+
+# ────────────────────────────────────────────────
+# Create custom vhost – supports SPA routing
+# ────────────────────────────────────────────────
+RUN printf "%s\n" \
+"<VirtualHost *:8080>" \
+"    ServerName localhost" \
+"    DocumentRoot /var/www/html/public" \
+"" \
+"    <Directory /var/www/html/public>" \
+"        Options +FollowSymLinks -Indexes" \
+"        AllowOverride All" \
+"        Require all granted" \
+"        RewriteEngine On" \
+"        RewriteCond %{REQUEST_FILENAME} !-f" \
+"        RewriteCond %{REQUEST_FILENAME} !-d" \
+"        RewriteRule ^ index.html [L]" \
+"    </Directory>" \
+"" \
+"    ErrorLog \${APACHE_LOG_DIR}/error.log" \
+"    CustomLog \${APACHE_LOG_DIR}/access.log combined" \
+"</VirtualHost>" \
+> /etc/apache2/sites-available/laravel.conf
+
+RUN a2ensite laravel.conf
+
+# ────────────────────────────────────────────────
+# Railway port configuration
+# ────────────────────────────────────────────────
+RUN echo "Listen 8080" > /etc/apache2/ports.conf
+
+EXPOSE 8080
+
+# ────────────────────────────────────────────────
+# Startup command – robust & safe
+# ────────────────────────────────────────────────
+CMD ["bash", "-c", "\
+  set -eux; \
+  a2dismod mpm_event mpm_worker || true; \
+  rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* || true; \
+  a2enmod mpm_prefork || true; \
+  apache2ctl -t; \
+  exec apache2-foreground"]
