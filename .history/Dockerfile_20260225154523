@@ -67,8 +67,7 @@ WORKDIR /var/www/html/frontend
 # Copy frontend dependency files first (caching)
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
 
-# Install frontend dependencies – fallback if lockfile missing
-RUN pnpm install || pnpm install --no-frozen-lockfile
+RUN pnpm install --frozen-lockfile
 
 # Copy frontend source code
 COPY frontend/ .
