@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Register custom CORS middleware globally
-        $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
+      $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
         $middleware->append(\App\Http\Middleware\LogStartup::class);  // ← add this
         
         // Debug log to confirm execution
