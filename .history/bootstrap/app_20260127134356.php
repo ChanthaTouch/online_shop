@@ -7,16 +7,12 @@ use Illuminate\Foundation\Configuration\Middleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',          // ← make sure api is registered
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Add HandleCors globally → this fixes OPTIONS 404 + adds CORS headers early
-        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
-
-        // Optional: if you want to limit it only to api group (not recommended for preflight)
-        // $middleware->api(append: \Illuminate\Http\Middleware\HandleCors::class);
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
