@@ -3,7 +3,6 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Support\Facades\Log;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,11 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Add CORS globally – this must run for OPTIONS requests
-        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
-        
-        // Debug log to confirm this code is executed on startup
-        Log::info('CORS middleware appended globally in bootstrap/app.php');
+        // Register custom CORS middleware globally (or built-in HandleCors)
+        $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
+        // Or use built-in: $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
