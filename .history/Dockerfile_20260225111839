@@ -1,0 +1,63 @@
+# Debug version 2026-02-25 v2 - verbose startup, migrate disabled temporarily
+FROM php:8.2-apache
+
+# Install system packages
+RUN apt-get update && apt-get install -y \
+    git unzip libzip-dev \
+    && docker-php-ext-install zip pdo pdo_mysql
+
+# Enable rewrite module
+RUN a2enmod rewrite
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Copy project files
+COPY . .
+
+# Remove vendor for clean install
+RUN rm -rf vendor
+
+# Install dependencies (production)
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --prefer-dist \
+    --no-interaction
+
+# Set correct permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 storage \
+    && chmod -R 755 bootstrap/cache
+
+# Set Laravel public folder as document root
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+
+# Suppress ServerName warning
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Expose port (Railway handles mapping)
+EXPOSE ${PORT:-8080}
+
+# Verbose startup – migrate disabled for now to isolate issues
+CMD ["bash", "-c", "set -euo pipefail && \
+    echo '=== Starting container (debug mode) ===' && \
+    a2dismod mpm_event mpm_worker >/dev/null 2>&1 || true && \
+    rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* >/dev/null 2>&1 || true && \
+    a2enmod mpm_prefork >/dev/null 2>&1 && \
+    echo 'MPM prefork activated' && \
+    PORT=${PORT:-80} && \
+    echo \"Binding to port: $PORT\" && \
+    sed -i \"s/Listen 80/Listen $PORT/g\" /etc/apache2/ports.conf && \
+    sed -i \"s/<VirtualHost \\*:80>/<VirtualHost *:$PORT>/g\" /etc/apache2/sites-available/000-default.conf && \
+    apache2ctl configtest && echo 'Apache config valid' || { echo 'Apache config invalid!'; exit 1; } && \
+    echo 'Testing Laravel bootstrap...' && \
+    php artisan --version || { echo 'ERROR: php artisan failed (bad APP_KEY or autoload?)'; exit 1; } && \
+    echo 'Testing DB ping (non-blocking)...' && \
+    php artisan db:monitor --once || echo 'DB ping failed – check credentials/vars' && \
+    # Migrate disabled for debug – uncomment once site responds \
+    # echo 'Running migrations...' && php artisan migrate --force --no-interaction || echo 'Migrate skipped/failed' && \
+    echo '=== Launching Apache ===' && \
+    exec apache2-foreground"]
