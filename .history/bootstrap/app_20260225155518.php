@@ -13,11 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Register custom CORS middleware globally
-        $middleware->append(\App\Http\Middleware\CorsMiddleware::class);
+        // Add CORS globally – this must run for OPTIONS requests
+        $middleware->append(\Illuminate\Http\Middleware\HandleCors::class);
         
-        // Debug log to confirm execution
-        Log::info('Custom CORS middleware appended globally in bootstrap/app.php');
+        // Debug log to confirm this code is executed on startup
+        Log::info('CORS middleware appended globally in bootstrap/app.php');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
