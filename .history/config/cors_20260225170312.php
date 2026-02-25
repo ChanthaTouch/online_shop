@@ -18,6 +18,8 @@ return [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:3000',
+     
+
         // New separate frontend domain – exact match
         'https://spirited-courtesy-production.up.railway.app',
 
