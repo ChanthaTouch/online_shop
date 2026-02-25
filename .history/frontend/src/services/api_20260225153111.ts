@@ -9,7 +9,6 @@ const baseURL = isDev
   : (import.meta.env.VITE_API_URL || "https://onlineshop-production-2b886.up.railway.app/api")
       .replace(/\/+$/, "");                  // no trailing slash
 console.log('[API] Using baseURL:', baseURL);
-console.log('[API] Full env VITE_API_URL:', import.meta.env.VITE_API_URL);
 const api = axios.create({
   baseURL,
   headers: {
