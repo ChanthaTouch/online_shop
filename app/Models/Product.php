@@ -96,7 +96,7 @@ class Product extends Model
     {
         return Attribute::make(
             get: fn () => isset($this->images[0])
-                ? ltrim($this->images[0], '/')
+                ? url('storage/' . ltrim($this->images[0], '/'))
                 : null
         );
     }
@@ -106,7 +106,7 @@ class Product extends Model
         return Attribute::make(
             get: fn () =>
                 collect($this->images ?? [])
-                    ->map(fn ($p) => ltrim($p, '/'))
+                    ->map(fn ($p) => url('storage/' . ltrim($p, '/')))
                     ->toArray()
         );
     }

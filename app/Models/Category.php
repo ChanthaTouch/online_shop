@@ -3,11 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 
 class Category extends Model
 {
     protected $fillable = ['name', 'slug', 'description', 'image'];
+
+    protected $appends = ['image_url'];
 
     public function products()
     {
@@ -15,7 +18,14 @@ class Category extends Model
     }
 
     /**
-     * Image is stored as relative path (e.g. "categories/xyz.jpg").
-     * Frontend builds full URL from this. No accessor needed for API.
+     * Return full URL for the category image
      */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->image
+                ? url('storage/' . ltrim($this->image, '/'))
+                : null
+        );
+    }
 }
