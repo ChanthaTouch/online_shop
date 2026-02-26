@@ -2,8 +2,23 @@
 
 return [
 
-    'paths' => ['*'],
+    'paths' => [
+        'api/*',                    // keep if you have any /api routes
+        'storage/*',
+        'sanctum/csrf-cookie',
+        'login',
+        'register',
+        'logout',
+        'me',
 
+        // ← ADD THESE LINES (covers ALL your current endpoints)
+        'cart/*',
+        'categories/*',
+        'products/*',
+        'orders/*',
+        'discounts/*',
+        'points/*',
+    ],
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
