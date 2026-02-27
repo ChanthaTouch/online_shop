@@ -11,7 +11,11 @@ return [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:3000',
+
+        // Production frontend – exact match (most important)
         'https://spirited-courtesy-production.up.railway.app',
+
+        // Backend domain itself (sometimes needed for same-origin testing or redirects)
         'https://onlineshop-production-2b86.up.railway.app',
     ],
 
