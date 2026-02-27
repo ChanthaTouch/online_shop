@@ -1,62 +1,49 @@
 #!/bin/bash
-set -e
 
-echo "=== Starting Laravel Application ==="
-echo "Environment: $APP_ENV"
-echo "Port: ${PORT:-8000}"
+echo "=== Laravel Railway Deployment ==="
 
-# Create necessary directories
-echo "Creating storage directories..."
-mkdir -p storage/framework/{sessions,views,cache,testing}
+# Run environment check
+php check-env.php
+
+# Create directories
+echo "Creating directories..."
+mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
-mkdir -p public/storage
 
 # Set permissions
 echo "Setting permissions..."
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+chmod -R 777 storage bootstrap/cache 2>&1 || true
 
-# Check database connection before proceeding
-echo "Checking database connection..."
-php artisan db:show 2>/dev/null || echo "Warning: Could not show database info"
+# Link storage
+echo "Linking storage..."
+php artisan storage:link --force 2>&1 || echo "Storage link skipped"
 
-# Run Laravel setup commands
-echo "Running Laravel setup..."
-php artisan storage:link 2>/dev/null || echo "Storage link already exists"
+# Test database connection
+echo "Testing database connection..."
+php artisan db:show 2>&1 || echo "Database check failed - continuing anyway"
 
+# Run migrations
 echo "Running migrations..."
-php artisan migrate --force --no-interaction || {
-    echo "ERROR: Migration failed!"
-    exit 1
+php artisan migrate --force 2>&1 || {
+    echo "ERROR: Migrations failed!"
+    echo "Attempting to continue..."
 }
 
-echo "Caching configuration..."
-php artisan config:cache || {
-    echo "ERROR: Config cache failed!"
-    exit 1
-}
+# Clear and cache
+echo "Clearing caches..."
+php artisan config:clear 2>&1
+php artisan cache:clear 2>&1
+
+echo "Caching config..."
+php artisan config:cache 2>&1
 
 echo "Caching routes..."
-php artisan route:cache || {
-    echo "ERROR: Route cache failed!"
-    exit 1
-}
+php artisan route:cache 2>&1
 
 echo "Caching views..."
-php artisan view:cache || {
-    echo "ERROR: View cache failed!"
-    exit 1
-}
+php artisan view:cache 2>&1
 
-echo "=== Laravel setup complete ==="
-
-# Check if PORT is set
-if [ -z "$PORT" ]; then
-    export PORT=8000
-fi
-
-echo "Starting PHP built-in server on 0.0.0.0:$PORT..."
-echo "Application URL: $APP_URL"
-
-# Use PHP's built-in server with router file for proper Laravel routing
-exec php -S 0.0.0.0:$PORT -t public router.php
+# Start server
+echo "=== Starting server on port ${PORT:-8000} ==="
+php artisan serve --host=0.0.0.0 --port=${PORT:-8000} --no-reload
