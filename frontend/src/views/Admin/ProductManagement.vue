@@ -200,10 +200,26 @@
       class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto"
       @click.self="showEditModal = false"
     >
-      <div class="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl my-8">
+      <div class="bg-white rounded-3xl p-8 max-w-2xl w-full shadow-2xl my-8 max-h-[90vh] overflow-y-auto">
         <h3 class="text-3xl font-serif font-bold text-[#2c1810] mb-6">Edit Product</h3>
         
         <form @submit.prevent="updateProduct" class="space-y-6">
+          <!-- Current Images -->
+          <div v-if="productToEdit && productToEdit.images && productToEdit.images.length > 0">
+            <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">Current Images</label>
+            <div class="grid grid-cols-3 gap-2">
+              <div v-for="(img, index) in productToEdit.images" :key="index" class="relative">
+                <img
+                  :src="img"
+                  :alt="`Product image ${index + 1}`"
+                  class="w-full h-24 object-cover rounded-xl shadow-md"
+                  @error="handleImageError"
+                />
+              </div>
+            </div>
+            <p class="mt-2 text-xs text-stone-600">Upload new images below to replace these</p>
+          </div>
+
           <div>
             <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">Product Name</label>
             <input
@@ -248,6 +264,63 @@
           </div>
 
           <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">Category</label>
+            <select
+              v-model="editForm.category_id"
+              required
+              class="w-full px-4 py-3 bg-[#f5f4f0]/50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-amber-500/30 outline-none"
+            >
+              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
+                {{ cat.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- New Images Upload -->
+          <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">
+              Upload New Images (optional)
+            </label>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              @change="handleEditImageChange"
+              class="w-full px-4 py-3 bg-[#f5f4f0]/50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-amber-500/30 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+            />
+            <p class="mt-2 text-xs text-stone-600">
+              {{ editImageFiles.length > 0 ? `${editImageFiles.length} file(s) selected` : 'Leave empty to keep current images' }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-4">
+            <input
+              v-model="editForm.is_active"
+              type="checkbox"
+              class="h-5 w-5 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+            />
+            <label class="text-lg font-serif text-[#2c1810]">Product is active</label>
+          </div>
+
+          <div class="flex gap-4 pt-4">
+            <button
+              type="button"
+              @click="showEditModal = false"
+              class="flex-1 px-6 py-3 bg-stone-200 text-stone-700 rounded-2xl hover:bg-stone-300 transition-colors font-medium"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="isUpdating"
+              class="flex-1 px-6 py-3 bg-amber-600 text-white rounded-2xl hover:bg-amber-700 transition-colors font-medium disabled:opacity-50"
+            >
+              {{ isUpdating ? 'Updating...' : 'Update Product' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
             <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">Category</label>
             <select
               v-model="editForm.category_id"
@@ -315,6 +388,7 @@ const productToDelete = ref<Product | null>(null)
 const productToEdit = ref<Product | null>(null)
 const isDeleting = ref(false)
 const isUpdating = ref(false)
+const editImageFiles = ref<File[]>([])
 
 const editForm = ref({
   name: '',
@@ -385,7 +459,15 @@ const editProduct = (product: Product) => {
     category_id: product.category?.id || '',
     is_active: product.is_active !== false
   }
+  editImageFiles.value = []
   showEditModal.value = true
+}
+
+const handleEditImageChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    editImageFiles.value = Array.from(target.files)
+  }
 }
 
 const updateProduct = async () => {
@@ -401,9 +483,17 @@ const updateProduct = async () => {
     formData.append('category_id', String(editForm.value.category_id))
     formData.append('is_active', editForm.value.is_active ? '1' : '0')
 
+    // Add new images if selected
+    if (editImageFiles.value.length > 0) {
+      editImageFiles.value.forEach((file) => {
+        formData.append('images[]', file)
+      })
+    }
+
     await productService.updateProduct(productToEdit.value.id, formData)
     alert('Product updated successfully!')
     showEditModal.value = false
+    editImageFiles.value = []
     await loadProducts(pagination.value.current_page)
   } catch (error: any) {
     alert(error.response?.data?.message || 'Failed to update product')
