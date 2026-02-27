@@ -26,6 +26,17 @@ const api = axios.create({
   timeout: 60000, // Increased to 60 seconds
 });
 
+// Check for mock tokens and clear them
+const token = localStorage.getItem("token");
+if (token === "mock-token") {
+  console.warn("⚠️ Mock token detected - clearing authentication. Please login again.");
+  localStorage.removeItem("token");
+  localStorage.removeItem("userId");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("userEmail");
+  localStorage.removeItem("userRole");
+}
+
 // Request Interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
@@ -55,6 +66,14 @@ api.interceptors.response.use(
       data: error.response?.data,
       code: error.code,
     });
+    
+    // Handle 401 Unauthorized - token might be invalid
+    if (error.response?.status === 401) {
+      console.warn("🔒 Unauthorized - token may be invalid. Please login again.");
+      // Optionally clear auth and redirect to login
+      // localStorage.clear();
+      // window.location.href = '/login';
+    }
     
     // Provide user-friendly error messages
     if (error.code === 'ECONNABORTED') {
