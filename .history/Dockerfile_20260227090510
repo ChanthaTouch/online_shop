@@ -42,7 +42,8 @@ RUN php artisan config:publish --tag=cors \
     && php artisan route:clear \
     && php artisan view:clear \
     && php artisan optimize:clear || true \
-    && php artisan storage:link
+    && RUN php artisan storage:link
+
 
 # Build Vue frontend
 WORKDIR /var/www/html/frontend
