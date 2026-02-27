@@ -23,5 +23,13 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
+
+        // Increase database timeout for Railway
+        if (config('database.default') === 'mysql') {
+            config(['database.connections.mysql.options' => [
+                \PDO::ATTR_TIMEOUT => 30,
+                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+            ]]);
+        }
     }
 }
