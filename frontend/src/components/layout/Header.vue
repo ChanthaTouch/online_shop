@@ -141,9 +141,20 @@ const userName = computed(() => localStorage.getItem('userName') || 'Guest')
 const userInitial = computed(() => userName.value.charAt(0).toUpperCase())
 
 const loadCartCount = async () => {
-  if (!isAuthenticated.value) return (cartCount.value = 0)
-  try { cartCount.value = await cartService.getItemCount() || 0 } 
-  catch { cartCount.value = 0 }
+  if (!isAuthenticated.value) {
+    cartCount.value = 0
+    return
+  }
+  
+  try { 
+    cartCount.value = await cartService.getItemCount() || 0 
+  } catch (error: any) {
+    // Only log if it's not an auth error
+    if (error?.response?.status !== 401 && error?.response?.status !== 403) {
+      console.error('Failed to load cart count:', error)
+    }
+    cartCount.value = 0
+  }
 }
 
 const handleLogout = async () => {

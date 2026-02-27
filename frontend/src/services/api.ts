@@ -23,7 +23,7 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: false,
-  timeout: 15000,
+  timeout: 60000, // Increased to 60 seconds
 });
 
 // Request Interceptor
@@ -45,12 +45,24 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
+    // Log detailed error information
     console.error("[API ERROR]", {
       url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      fullURL: error.config?.baseURL + error.config?.url,
       status: error.response?.status,
       message: error.message,
       data: error.response?.data,
+      code: error.code,
     });
+    
+    // Provide user-friendly error messages
+    if (error.code === 'ECONNABORTED') {
+      console.error('⏱️ Request timeout - backend may be slow or down');
+    } else if (error.code === 'ERR_NETWORK') {
+      console.error('🌐 Network error - check if backend is accessible');
+    }
+    
     return Promise.reject(error);
   }
 );
