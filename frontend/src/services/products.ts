@@ -2,6 +2,9 @@
 import api from "./api";
 import { getImageUrl, normalizeImages } from "@/utils/image";
 
+// SVG placeholder to avoid network requests
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"%3E%3Crect fill="%23f5f4f0" width="200" height="200"/%3E%3Cpath d="M70 70h60v60H70z" fill="%23d6d3d1"/%3E%3Cpath d="M85 85l15 20 10-10 20 25H80z" fill="%23a8a29e"/%3E%3Ccircle cx="95" cy="90" r="5" fill="%23a8a29e"/%3E%3C/svg%3E';
+
 export interface Product {
   id: number;
   name: string;
@@ -35,7 +38,7 @@ export const productService = {
       const primary =
         getImageUrl(raw.primary_image) ||
         imgs[0] ||
-        "/images/placeholder-product.jpg";
+        PLACEHOLDER_IMAGE;
 
       return {
         ...raw,
@@ -65,7 +68,7 @@ export const productService = {
       const primary =
         getImageUrl(raw.primary_image) ||
         imgs[0] ||
-        "/images/placeholder-product.jpg";
+        PLACEHOLDER_IMAGE;
 
       return {
         ...raw,

@@ -56,12 +56,35 @@ public function store(Request $request)
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        $category->update([
+        $data = [
             'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-        ]);
+            'description' => $validated['description'] ?? $category->description,
+        ];
+
+        // Handle slug
+        if ($request->filled('slug')) {
+            $data['slug'] = Str::slug($request->input('slug'));
+        } else {
+            $data['slug'] = Str::slug($validated['name']);
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($category->image) {
+                \Storage::disk('public')->delete($category->image);
+            }
+            
+            $path = $request->file('image')->store('categories', 'public');
+            $data['image'] = $path;
+        }
+
+        $category->update($data);
 
         return response()->json($category);
     }
@@ -70,9 +93,15 @@ public function store(Request $request)
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+        
+        // Delete image if exists
+        if ($category->image) {
+            \Storage::disk('public')->delete($category->image);
+        }
+        
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted']);
+        return response()->json(['message' => 'Category deleted successfully']);
     }
 
     // CART: GET /cart

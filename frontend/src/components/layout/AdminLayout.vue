@@ -42,12 +42,24 @@
             </li>
             <li>
               <router-link
-                to="/admin/categories/create"
+                to="/admin/categories"
                 class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
                 active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
               >
                 <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2" />
+                </svg>
+                <span class="font-medium tracking-wide">Manage Categories</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/categories/create"
+                class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
+                active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
+              >
+                <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
                 <span class="font-medium tracking-wide">Create Category</span>
               </router-link>

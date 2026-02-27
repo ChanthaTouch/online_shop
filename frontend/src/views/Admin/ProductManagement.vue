@@ -435,6 +435,9 @@ const deleteProduct = async () => {
 
 const handleImageError = (e: Event) => {
   const target = e.target as HTMLImageElement
-  target.src = '/images/placeholder-product.jpg'
+  // Use a simple SVG placeholder instead of trying to load an image
+  target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect fill="%23f5f4f0" width="100" height="100"/%3E%3Ctext x="50" y="50" font-family="Arial" font-size="14" fill="%23a8a29e" text-anchor="middle" dominant-baseline="middle"%3ENo Image%3C/text%3E%3C/svg%3E'
+  // Remove error handler to prevent infinite loop
+  target.onerror = null
 }
 </script>

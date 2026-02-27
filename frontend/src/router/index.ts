@@ -28,6 +28,7 @@ const routes = [
       { path: '',                        name: 'AdminDashboard',      component: () => import('@/views/Admin/ProductUpload.vue') },
       { path: 'products',                name: 'ProductManagement',   component: () => import('@/views/Admin/ProductManagement.vue') },
       { path: 'products/:slug/edit',     name: 'ProductEdit',         component: () => import('@/views/Admin/ProductEdit.vue'),     props: true },
+      { path: 'categories',              name: 'CategoryManagement',  component: () => import('@/views/Admin/CategoryManagement.vue') },
       { path: 'categories/create',       name: 'CategoryCreate',      component: () => import('@/views/Admin/CategoryCreate.vue') },
       { path: 'discounts',               name: 'DiscountCreate',      component: () => import('@/views/Admin/DiscountCreate.vue') },
     ]
