@@ -321,46 +321,6 @@
         </form>
       </div>
     </div>
-            <label class="block text-xs font-black uppercase tracking-wider text-amber-700 mb-2">Category</label>
-            <select
-              v-model="editForm.category_id"
-              required
-              class="w-full px-4 py-3 bg-[#f5f4f0]/50 border border-stone-200 rounded-2xl focus:ring-2 focus:ring-amber-500/30 outline-none"
-            >
-              <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-4">
-            <input
-              v-model="editForm.is_active"
-              type="checkbox"
-              class="h-5 w-5 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
-            />
-            <label class="text-lg font-serif text-[#2c1810]">Product is active</label>
-          </div>
-
-          <div class="flex gap-4 pt-4">
-            <button
-              type="button"
-              @click="showEditModal = false"
-              class="flex-1 px-6 py-3 bg-stone-200 text-stone-700 rounded-2xl hover:bg-stone-300 transition-colors font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              :disabled="isUpdating"
-              class="flex-1 px-6 py-3 bg-amber-600 text-white rounded-2xl hover:bg-amber-700 transition-colors font-medium disabled:opacity-50"
-            >
-              {{ isUpdating ? 'Updating...' : 'Update Product' }}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
