@@ -98,10 +98,10 @@ RUN printf "%s\n" \
 
 RUN a2ensite laravel.conf
 
-# Railway port configuration
-RUN echo "Listen 8080" > /etc/apache2/ports.conf
+# Railway port configuration - use PORT env variable
+RUN echo "Listen \${PORT:-8080}" > /etc/apache2/ports.conf
 
-EXPOSE 8080
+EXPOSE ${PORT:-8080}
 
 # Startup command – robust & safe
 CMD ["bash", "-c", "\
