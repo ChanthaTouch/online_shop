@@ -7,13 +7,17 @@ Route::get('/storage/{path}', function ($path) {
     $file = storage_path('app/public/' . $path);
     
     if (!file_exists($file)) {
-        abort(404);
+        abort(404, 'File not found: ' . $path);
     }
     
+    $mimeType = mime_content_type($file);
+    
     return response()->file($file, [
+        'Content-Type' => $mimeType,
         'Access-Control-Allow-Origin' => '*',
         'Access-Control-Allow-Methods' => 'GET, OPTIONS',
         'Access-Control-Allow-Headers' => '*',
+        'Cache-Control' => 'public, max-age=31536000',
     ]);
 })->where('path', '.*');
 

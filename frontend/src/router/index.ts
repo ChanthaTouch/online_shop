@@ -25,10 +25,11 @@ const routes = [
     component: AdminLayout,
     meta: { requiresAdmin: true },
     children: [
-      { path: '',                        name: 'AdminDashboard',   component: () => import('@/views/Admin/ProductUpload.vue') },
-      { path: 'products/:slug/edit',     name: 'ProductEdit',      component: () => import('@/views/Admin/ProductEdit.vue'),     props: true },
-      { path: 'categories/create',       name: 'CategoryCreate',   component: () => import('@/views/Admin/CategoryCreate.vue') },
-      { path: 'discounts',               name: 'DiscountCreate',   component: () => import('@/views/Admin/DiscountCreate.vue') },
+      { path: '',                        name: 'AdminDashboard',      component: () => import('@/views/Admin/ProductUpload.vue') },
+      { path: 'products',                name: 'ProductManagement',   component: () => import('@/views/Admin/ProductManagement.vue') },
+      { path: 'products/:slug/edit',     name: 'ProductEdit',         component: () => import('@/views/Admin/ProductEdit.vue'),     props: true },
+      { path: 'categories/create',       name: 'CategoryCreate',      component: () => import('@/views/Admin/CategoryCreate.vue') },
+      { path: 'discounts',               name: 'DiscountCreate',      component: () => import('@/views/Admin/DiscountCreate.vue') },
     ]
   },
 

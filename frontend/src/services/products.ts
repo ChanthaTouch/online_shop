@@ -19,6 +19,9 @@ export interface Product {
   lowest_price?: number;
   category?: any;
   display_image: string;
+  description?: string;
+  stock?: number;
+  is_active?: boolean;
 }
 
 export const productService = {
@@ -71,7 +74,7 @@ export const productService = {
         final_price: Number(raw.final_price ?? raw.price ?? 0),
         lowest_price: Number(raw.lowest_price ?? raw.price ?? 0),
         has_variants: Array.isArray(raw.variants) && raw.variants.length > 0,
-        is_on_sale: !!raw.discount_price && raw.discount_price < raw.price,
+        is_on_sale: !!raw.discount_price && raw.discount_price < raw.discount_price,
         images: imgs,
         primary_image: primary,
         display_image: primary,
@@ -80,6 +83,30 @@ export const productService = {
       if (err.response?.status === 404) return null;
       throw err;
     }
+  },
+
+  async getCategories() {
+    const { data } = await api.get("/categories");
+    return data;
+  },
+
+  async createProduct(formData: FormData) {
+    const { data } = await api.post("/products", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
+  async updateProduct(id: number, formData: FormData) {
+    const { data } = await api.post(`/products/${id}?_method=PUT`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return data;
+  },
+
+  async deleteProduct(id: number) {
+    const { data } = await api.delete(`/products/${id}`);
+    return data;
   },
 };
 

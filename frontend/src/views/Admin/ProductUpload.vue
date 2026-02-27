@@ -197,12 +197,11 @@
 </template>
 
 <script setup lang="ts">
-// The script section remains exactly the same as your original ProductUpload.vue
-// (No functional changes needed for the visual redesign)
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { productService } from '@/services/products'
 import { authService } from '@/services/auth'
+import api from '@/services/api'
 
 const router = useRouter()
 const categories = ref<any[]>([])
@@ -235,7 +234,9 @@ onMounted(async () => {
   }
 
   try {
-    categories.value = await productService.getCategories()
+    // Fetch categories directly from API
+    const { data } = await api.get('/categories')
+    categories.value = data
   } catch (error) {
     console.error('Failed to load categories', error)
   }
@@ -292,7 +293,13 @@ const handleSubmit = async () => {
     })
 
     await productService.createProduct(formData)
-    alert('Product uploaded successfully!')
+    
+    const goToManage = confirm('Product uploaded successfully! Would you like to view all products?')
+    
+    if (goToManage) {
+      router.push({ name: 'ProductManagement' })
+      return
+    }
 
     // Reset form
     form.value = {
@@ -310,7 +317,8 @@ const handleSubmit = async () => {
     isActive.value = true
     hasDiscount.value = false
   } catch (error: any) {
-    alert(error.response?.data?.message || 'Unauthorized or Validation Error')
+    console.error('Upload error:', error)
+    alert(error.response?.data?.message || 'Failed to upload product. Please try again.')
   } finally {
     isLoading.value = false
   }

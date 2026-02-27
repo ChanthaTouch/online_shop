@@ -17,7 +17,19 @@ chmod -R 777 storage bootstrap/cache 2>&1 || true
 
 # Link storage
 echo "Linking storage..."
-php artisan storage:link --force 2>&1 || echo "Storage link skipped"
+mkdir -p storage/app/public/products
+php artisan storage:link --force 2>&1 || {
+    echo "Storage link command failed, creating manually..."
+    rm -rf public/storage
+    ln -s ../storage/app/public public/storage
+}
+
+# Verify storage link
+if [ -L "public/storage" ] || [ -d "public/storage" ]; then
+    echo "✓ Storage link exists"
+else
+    echo "✗ WARNING: Storage link missing!"
+fi
 
 # Test database connection
 echo "Testing database connection..."

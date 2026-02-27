@@ -18,25 +18,26 @@
             <li>
               <router-link
                 to="/admin"
+                exact
+                class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
+                active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
+              >
+                <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                <span class="font-medium tracking-wide">Add Product</span>
+              </router-link>
+            </li>
+            <li>
+              <router-link
+                to="/admin/products"
                 class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
                 active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
               >
                 <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10m-4-4l-8-4m16 0l-8 4" />
                 </svg>
-                <span class="font-medium tracking-wide">Products</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/admin/categories"
-                class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
-                active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
-              >
-                <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2" />
-                </svg>
-                <span class="font-medium tracking-wide">Categories</span>
+                <span class="font-medium tracking-wide">Manage Products</span>
               </router-link>
             </li>
             <li>
@@ -46,7 +47,7 @@
                 active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
               >
                 <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2" />
                 </svg>
                 <span class="font-medium tracking-wide">Create Category</span>
               </router-link>
@@ -63,33 +64,6 @@
                 <span class="font-medium tracking-wide">Special Offers</span>
               </router-link>
             </li>
-            <!-- Future links (uncomment when routes exist) -->
-            <!--
-            <li>
-              <router-link
-                to="/admin/orders"
-                class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
-                active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
-              >
-                <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2  2 2v12a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span class="font-medium tracking-wide">Orders</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/admin/users"
-                class="group flex items-center px-10 py-5 text-white/80 hover:text-white hover:bg-white/5 transition-all duration-300"
-                active-class="text-amber-500 bg-white/10 border-l-4 border-amber-500"
-              >
-                <svg class="w-5 h-5 mr-4 opacity-70 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21h-6a4 4 0 01-4-4v-1m10 1h-6m6 0a4 4 0 004-4v-1m-8 6v-1a4 4 0 014-4h2a4 4 0 014 4v1" />
-                </svg>
-                <span class="font-medium tracking-wide">Users</span>
-              </router-link>
-            </li>
-            -->
           </ul>
         </nav>
 
