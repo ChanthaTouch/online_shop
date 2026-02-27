@@ -29,9 +29,11 @@ return [
     'exposed_headers' => [
         'Authorization',
         'Content-Disposition',
+        'Content-Type',
+        'Accept',
     ],
 
     'max_age' => 86400,                 // 24 hours – good performance
 
-    'supports_credentials' => false,    // correct – you're using Bearer tokens
+    'supports_credentials' => true,     // Enable credentials for cross-origin requests
 ];
