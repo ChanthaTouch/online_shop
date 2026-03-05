@@ -12,7 +12,9 @@ return [
         'http://127.0.0.1:5173',
         'http://localhost:3000',
 
+        // Railway deployments
         'https://spirited-courtesy-production.up.railway.app',
+        'https://chantha-drink-delivery-production.up.railway.app',
         'https://onlineshop-production-2b86.up.railway.app',
     ],
 
