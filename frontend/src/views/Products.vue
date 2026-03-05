@@ -285,8 +285,23 @@ watch(currentPage, () => {
   loadProducts()
 })
 
+// Watch for route query changes (e.g., when navigating from category links)
+watch(
+  () => route.query.category,
+  (newCategory) => {
+    if (newCategory !== selectedCategory.value) {
+      selectedCategory.value = (newCategory as string) || ''
+    }
+  }
+)
+
 onMounted(async () => {
   activeDiscount.value = activeDiscountFromQuery.value
+  
+  // Initialize category from URL query parameter
+  if (route.query.category) {
+    selectedCategory.value = route.query.category as string
+  }
 
   try {
     categories.value = await categoryService.getCategories()
