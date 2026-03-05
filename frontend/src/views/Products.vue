@@ -79,8 +79,16 @@
         <div
           v-for="product in products"
           :key="product.id"
-          class="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-stone-100 hover:border-amber-200"
+          class="group relative bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 border border-stone-100 hover:border-amber-200"
         >
+          <!-- Clickable overlay for entire card -->
+          <router-link
+            v-if="product.slug"
+            :to="{ name: 'ProductDetail', params: { slug: product.slug } }"
+            class="absolute inset-0 z-10"
+            aria-label="View Product Details"
+          ></router-link>
+
           <div class="relative aspect-square overflow-hidden">
             <img
               :src="product.display_image"
@@ -93,6 +101,13 @@
               class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md"
             >
               {{ product.discount_percentage || 'Sale' }}%
+            </div>
+            
+            <!-- Hover overlay with "View Details" text -->
+            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center pointer-events-none">
+              <span class="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-xl">
+                View Details
+              </span>
             </div>
           </div>
 
@@ -114,16 +129,13 @@
             </div>
 
             <div class="flex justify-between items-center">
-              <router-link
-                :to="`/products/${product.slug}`"
-                class="text-amber-700 hover:text-amber-900 font-medium transition-colors"
-              >
-                View Details →
-              </router-link>
+              <span class="text-stone-500 text-sm">
+                {{ product.category?.name || 'Specialty' }}
+              </span>
 
               <button
-                @click="addToCart(product)"
-                class="bg-amber-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors shadow-sm"
+                @click.stop="addToCart(product)"
+                class="relative z-20 bg-amber-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-amber-700 transition-colors shadow-sm"
                 :disabled="product.stock === 0"
               >
                 {{ product.stock === 0 ? 'Out of Stock' : 'Add to Cart' }}
