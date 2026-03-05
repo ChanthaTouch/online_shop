@@ -49,7 +49,6 @@
             <select
               v-model="selectedCategory"
               class="w-full md:w-48 px-6 py-6 bg-transparent border-none text-stone-800 font-light text-lg appearance-none focus:outline-none cursor-pointer"
-              @change="loadProducts"
             >
               <option value="">All Origins</option>
               <option v-for="cat in categories" :key="cat.id" :value="cat.slug">
@@ -230,6 +229,15 @@ const loadProducts = async () => {
   if (!isMounted.value) return
 
   loading.value = true
+  
+  // Debug logging
+  console.log('Loading products with filters:', {
+    page: currentPage.value,
+    category: selectedCategory.value,
+    search: searchQuery.value,
+    discount: activeDiscount.value
+  })
+  
   try {
     const response = await productService.getProducts(
       currentPage.value,
@@ -238,6 +246,8 @@ const loadProducts = async () => {
       activeDiscount.value || undefined
     )
 
+    console.log('Products loaded:', response.data?.length, 'products')
+    
     products.value = response.data || []
     totalPages.value = response.last_page || 1
   } catch (err: any) {
@@ -261,23 +271,29 @@ const addToCart = async (product: any) => {
   }
 }
 
+// Watch filters and reset to page 1 when they change
 watch(
-  [activeDiscount, searchQuery, selectedCategory, currentPage],
+  [activeDiscount, searchQuery, selectedCategory],
   () => {
-    currentPage.value = 1 // reset to page 1 on filter change
+    currentPage.value = 1
     loadProducts()
-  },
-  { deep: true }
+  }
 )
+
+// Watch page changes separately (don't reset page)
+watch(currentPage, () => {
+  loadProducts()
+})
 
 onMounted(async () => {
   activeDiscount.value = activeDiscountFromQuery.value
 
   try {
     categories.value = await categoryService.getCategories()
-    console.log('Categories loaded:', categories.value)
+    console.log('✅ Categories loaded:', categories.value.length, 'categories')
+    console.log('Categories:', categories.value.map(c => ({ id: c.id, name: c.name, slug: c.slug })))
   } catch (err) {
-    console.warn('Categories load failed:', err)
+    console.warn('❌ Categories load failed:', err)
     categories.value = []
   }
 
