@@ -189,7 +189,8 @@ const loading = ref(false)
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const activeDiscount = ref<number | null>(null)
-const isMounted = ref(true)
+const isMounted = ref(false)
+const isInitialLoad = ref(true)
 
 const activeDiscountFromQuery = computed(() => {
   const discountQuery = route.query.discount
@@ -231,11 +232,12 @@ const loadProducts = async () => {
   loading.value = true
   
   // Debug logging
-  console.log('Loading products with filters:', {
+  console.log('🔍 Loading products with filters:', {
     page: currentPage.value,
     category: selectedCategory.value,
     search: searchQuery.value,
-    discount: activeDiscount.value
+    discount: activeDiscount.value,
+    routeQuery: route.query
   })
   
   try {
@@ -246,12 +248,13 @@ const loadProducts = async () => {
       activeDiscount.value || undefined
     )
 
-    console.log('Products loaded:', response.data?.length, 'products')
+    console.log('✅ Products loaded:', response.data?.length, 'products')
+    console.log('📦 First product category:', response.data?.[0]?.category)
     
     products.value = response.data || []
     totalPages.value = response.last_page || 1
   } catch (err: any) {
-    console.error('Failed to load products:', err)
+    console.error('❌ Failed to load products:', err)
     products.value = []
     totalPages.value = 1
   } finally {
@@ -275,6 +278,12 @@ const addToCart = async (product: any) => {
 watch(
   [activeDiscount, searchQuery, selectedCategory],
   () => {
+    // Skip if this is the initial load (onMounted will handle it)
+    if (isInitialLoad.value) {
+      return
+    }
+    
+    console.log('🔄 Filter changed, reloading products')
     currentPage.value = 1
     loadProducts()
   }
@@ -282,6 +291,11 @@ watch(
 
 // Watch page changes separately (don't reset page)
 watch(currentPage, () => {
+  // Skip if this is the initial load
+  if (isInitialLoad.value) {
+    return
+  }
+  
   loadProducts()
 })
 
@@ -289,34 +303,50 @@ watch(currentPage, () => {
 watch(
   () => route.query.category,
   (newCategory) => {
+    console.log('🔄 Route query changed, new category:', newCategory)
     if (newCategory !== selectedCategory.value) {
       selectedCategory.value = (newCategory as string) || ''
+      // Don't call loadProducts here - the selectedCategory watcher will handle it
     }
   }
 )
 
 onMounted(async () => {
-  activeDiscount.value = activeDiscountFromQuery.value
+  isMounted.value = true
   
-  // Initialize category from URL query parameter
-  if (route.query.category) {
-    selectedCategory.value = route.query.category as string
-  }
-
+  // Load categories first
   try {
     categories.value = await categoryService.getCategories()
     console.log('✅ Categories loaded:', categories.value.length, 'categories')
-    console.log('Categories:', categories.value.map(c => ({ id: c.id, name: c.name, slug: c.slug })))
+    console.log('📋 Categories:', categories.value.map(c => ({ id: c.id, name: c.name, slug: c.slug })))
   } catch (err) {
     console.warn('❌ Categories load failed:', err)
     categories.value = []
   }
 
+  // Initialize filters from URL query parameters
+  activeDiscount.value = activeDiscountFromQuery.value
+  
+  if (route.query.category) {
+    selectedCategory.value = route.query.category as string
+    console.log('🎯 Initialized category from URL:', selectedCategory.value)
+  }
+  
+  if (route.query.search) {
+    searchQuery.value = route.query.search as string
+    console.log('🔍 Initialized search from URL:', searchQuery.value)
+  }
+
+  // Load products with initialized filters
   await loadProducts()
+  
+  // Enable watchers after initial load
+  isInitialLoad.value = false
 })
 
 onUnmounted(() => {
   isMounted.value = false
+  isInitialLoad.value = true
 })
 </script>
 
